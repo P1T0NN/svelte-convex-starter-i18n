@@ -17,6 +17,8 @@ export function getBackendErrorMessage(error: Error): string | undefined {
 			return m['BackendMessages.unauthenticated']();
 		case 'FORBIDDEN':
 			return m['BackendMessages.forbidden']();
+		case 'CAPTCHA_FAILED':
+			return m['BackendMessages.captchaFailed']();
 		case 'INVALID_TODO_DATA':
 			return m['BackendMessages.invalidTodoData']();
 		case 'TODO_NOT_FOUND':

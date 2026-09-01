@@ -27,7 +27,7 @@ import type {
 import type { FunctionArgs, FunctionReference, FunctionReturnType } from 'convex/server';
 
 type ValidatableControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-type FormBindings<Mutation extends FunctionReference<'mutation'>> = {
+type FormBindings<Mutation extends FunctionReference<'mutation' | 'action'>> = {
 	get values(): MutationValues<Mutation>;
 	set values(values: MutationValues<Mutation>);
 	get uploadFiles(): PreviewFile[];
@@ -36,8 +36,13 @@ type FormBindings<Mutation extends FunctionReference<'mutation'>> = {
 	set submitting(submitting: boolean);
 };
 
-type UseFormOptions<Mutation extends FunctionReference<'mutation'>> = {
+type UseFormOptions<Mutation extends FunctionReference<'mutation' | 'action'>> = {
 	function: () => Mutation;
+	functionType: () => 'mutation' | 'action';
+	captchaAction: () => string | undefined;
+	captchaToken: () => string;
+	executeCaptcha: () => void;
+	resetCaptcha: () => void;
 	fields: () => FieldConfig[];
 	bindings: FormBindings<Mutation>;
 	uploadNamespace: () => string | undefined;
@@ -57,13 +62,19 @@ function hasUploadField(fields: FieldConfig[]): boolean {
 	);
 }
 
-export function useForm<Mutation extends FunctionReference<'mutation'>>(
+export function useForm<Mutation extends FunctionReference<'mutation' | 'action'>>(
 	options: UseFormOptions<Mutation>
 ) {
 	let errors = $state<Record<string, string>>({});
 	let uploadProgress = $state<number | null>(null);
 	let preparingUpload = $state(false);
-	const mutation = useMutation(options.function());
+	let pendingCaptchaForm: HTMLFormElement | undefined;
+	// SAFETY: functionType and the generated Convex reference are supplied together by Form.
+	const callFunction = (
+		options.functionType() === 'action'
+			? useAction(options.function() as FunctionReference<'action'>)
+			: useMutation(options.function() as FunctionReference<'mutation'>)
+	) as (args: FunctionArgs<Mutation>) => Promise<FunctionReturnType<Mutation>>;
 	const generateUploadUrl = useMutation(api.storage.r2.generateUploadUrl);
 	const syncUploadMetadata = useAction(api.storage.r2.syncMetadata);
 	const deleteUpload = useMutation(api.storage.r2.deleteObject);
@@ -188,6 +199,9 @@ export function useForm<Mutation extends FunctionReference<'mutation'>>(
 	): Promise<void> {
 		event.preventDefault();
 		if (options.bindings.submitting) return;
+		const captchaAction = options.captchaAction();
+		if (captchaAction && options.functionType() !== 'action')
+			throw new Error('captchaAction requires functionType="action"');
 
 		const form = event.currentTarget;
 		errors = collectValidationErrors(form);
@@ -195,6 +209,11 @@ export function useForm<Mutation extends FunctionReference<'mutation'>>(
 			toast.error(m['Components.Form.fixHighlightedFields']());
 			await tick();
 			focusFirstError(form);
+			return;
+		}
+		if (captchaAction && !options.captchaToken()) {
+			pendingCaptchaForm = form;
+			options.executeCaptcha();
 			return;
 		}
 
@@ -221,8 +240,11 @@ export function useForm<Mutation extends FunctionReference<'mutation'>>(
 			}) ?? { ...options.bindings.values };
 			const mutationArgs = uploadEnabled ? { ...preparedArgs, retainedFiles } : preparedArgs;
 			if (uploadedFiles.length > 0) Object.assign(mutationArgs, { uploadedFiles });
+			const captchaToken = options.captchaToken();
+			if (captchaAction && !captchaToken) throw new Error(options.errorMessage());
+			if (captchaAction) Object.assign(mutationArgs, { turnstileToken: captchaToken });
 			// SAFETY: native validation runs first and Convex validators remain authoritative.
-			result = await mutation(mutationArgs as FunctionArgs<Mutation>);
+			result = await callFunction(mutationArgs as FunctionArgs<Mutation>);
 		} catch (error) {
 			await removeUploads(uploadedFiles);
 			toastMessage({ type: 'error', error, message: options.errorMessage() });
@@ -233,6 +255,7 @@ export function useForm<Mutation extends FunctionReference<'mutation'>>(
 			options.bindings.submitting = false;
 			preparingUpload = false;
 			uploadProgress = null;
+			if (captchaAction) options.resetCaptcha();
 		}
 
 		if (options.resetOnSuccess()) {
@@ -263,6 +286,11 @@ export function useForm<Mutation extends FunctionReference<'mutation'>>(
 		inputValue,
 		checkboxValue,
 		customFieldContext,
+		resumeAfterCaptcha() {
+			const form = pendingCaptchaForm;
+			pendingCaptchaForm = undefined;
+			form?.requestSubmit();
+		},
 		submit
 	};
 }

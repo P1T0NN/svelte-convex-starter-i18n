@@ -1,6 +1,7 @@
 <script lang="ts">
 	// LIBRARIES
 	import { useAuth } from '../../hooks/useAuth.svelte';
+	import { useCaptcha } from '@/features/captcha/hooks/useCaptcha.svelte';
 	import { m } from '@/lib/paraglide/messages';
 
 	// CONSTANTS
@@ -14,6 +15,7 @@
 	import PasswordInput from '@/components/ui/custom-components/password-input/password-input.svelte';
 	import { Input } from '@/components/ui/input/index.js';
 	import { Spinner } from '@/components/ui/spinner/index.js';
+	import CaptchaField from '@/features/captcha/components/captcha-field.svelte';
 
 	// DATA
 	import { ERROR_MESSAGE_KEYS } from '@/shared/features/auth/data/authData';
@@ -24,6 +26,7 @@
 	let { ...restProps }: ComponentProps<typeof Card.Root> = $props();
 
 	const auth = useAuth();
+	const captcha = useCaptcha();
 
 	let name = $state('');
 	let email = $state('');
@@ -36,17 +39,28 @@
 			auth.setError('PASSWORDS_DO_NOT_MATCH');
 			return;
 		}
+		if (!captcha.token) return;
 
-		await auth.signUpWithEmail(
-			email,
-			password,
-			name,
-			m['AuthFeature.SignUpForm.verificationCodeToast']()
-		);
+		try {
+			await auth.signUpWithEmail(
+				email,
+				password,
+				name,
+				m['AuthFeature.SignUpForm.verificationCodeToast'](),
+				captcha.token
+			);
+		} finally {
+			captcha.reset();
+		}
 	}
 
 	async function handleGoogleSignIn() {
-		await auth.signInWithGoogle();
+		if (!captcha.token) return;
+		try {
+			await auth.signInWithGoogle(captcha.token);
+		} finally {
+			captcha.reset();
+		}
 	}
 </script>
 
@@ -96,6 +110,10 @@
 					>
 				</Field.Field>
 
+				<Field.Field>
+					<CaptchaField onToken={captcha.setToken} onReset={captcha.registerReset} />
+				</Field.Field>
+
 				{#if auth.error}
 					<p class="text-sm font-medium text-red-500">
 						{m[ERROR_MESSAGE_KEYS[auth.error]]()}
@@ -104,7 +122,7 @@
 
 				<Field.Group>
 					<Field.Field>
-						<Button type="submit" disabled={auth.submitting}>
+						<Button type="submit" disabled={auth.submitting || !captcha.token}>
 							{#if auth.submitting}
 								<Spinner />
 							{/if}
@@ -113,7 +131,7 @@
 						<Button
 							variant="outline"
 							type="button"
-							disabled={auth.submitting}
+							disabled={auth.submitting || !captcha.token}
 							onclick={handleGoogleSignIn}
 							>{m['AuthFeature.SignUpForm.continueWithGoogle']()}</Button
 						>

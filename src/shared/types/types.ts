@@ -7,6 +7,7 @@ export type typesBackendResult<Code extends string = string> =
 export const backendErrorDataSchema = z.discriminatedUnion('code', [
 	z.object({ code: z.literal('UNAUTHENTICATED') }),
 	z.object({ code: z.literal('FORBIDDEN') }),
+	z.object({ code: z.literal('CAPTCHA_FAILED') }),
 	z.object({ code: z.literal('INVALID_TODO_DATA') }),
 	z.object({ code: z.literal('TODO_NOT_FOUND') }),
 	z.object({ code: z.literal('INVALID_RETAINED_IMAGE') }),

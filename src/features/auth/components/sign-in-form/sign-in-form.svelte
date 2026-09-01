@@ -1,6 +1,7 @@
 <script lang="ts">
 	// LIBRARIES
 	import { useAuth } from '../../hooks/useAuth.svelte';
+	import { useCaptcha } from '@/features/captcha/hooks/useCaptcha.svelte';
 	import { m } from '@/lib/paraglide/messages';
 
 	// CONSTANTS
@@ -13,6 +14,7 @@
 	import EmailInput from '@/components/ui/custom-components/email-input/email-input.svelte';
 	import PasswordInput from '@/components/ui/custom-components/password-input/password-input.svelte';
 	import { Spinner } from '@/components/ui/spinner/index.js';
+	import CaptchaField from '@/features/captcha/components/captcha-field.svelte';
 
 	// DATA
 	import { ERROR_MESSAGE_KEYS } from '@/shared/features/auth/data/authData';
@@ -25,17 +27,28 @@
 	let { ...restProps }: SignInFormProps = $props();
 
 	const auth = useAuth();
+	const captcha = useCaptcha();
 
 	let email = $state('');
 	let password = $state('');
 
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
-		await auth.signInWithEmail(email, password);
+		if (!captcha.token) return;
+		try {
+			await auth.signInWithEmail(email, password, captcha.token);
+		} finally {
+			captcha.reset();
+		}
 	}
 
 	async function handleGoogleSignIn() {
-		await auth.signInWithGoogle();
+		if (!captcha.token) return;
+		try {
+			await auth.signInWithGoogle(captcha.token);
+		} finally {
+			captcha.reset();
+		}
 	}
 </script>
 
@@ -65,6 +78,10 @@
 					</Field.Description>
 				</Field.Field>
 
+				<Field.Field>
+					<CaptchaField onToken={captcha.setToken} onReset={captcha.registerReset} />
+				</Field.Field>
+
 				{#if auth.error}
 					<p class="text-sm font-medium text-red-500">
 						{m[ERROR_MESSAGE_KEYS[auth.error]]()}
@@ -73,7 +90,7 @@
 
 				<Field.Group>
 					<Field.Field>
-						<Button type="submit" disabled={auth.submitting}>
+						<Button type="submit" disabled={auth.submitting || !captcha.token}>
 							{#if auth.submitting}
 								<Spinner />
 							{/if}
@@ -82,7 +99,7 @@
 						<Button
 							variant="outline"
 							type="button"
-							disabled={auth.submitting}
+							disabled={auth.submitting || !captcha.token}
 							onclick={handleGoogleSignIn}
 							>{m['AuthFeature.SignInForm.continueWithGoogle']()}</Button
 						>

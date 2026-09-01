@@ -52,10 +52,12 @@
 	<Form
 		class="w-full"
 		function={api.tables.tasks.mutations.createTodo.createTodo}
+		functionType="action"
+		captchaAction="create_todo"
 		fields={createTodoFields}
 		uploadNamespace="todos"
 		values={{ done: false }}
-		bind:submitting		
+		bind:submitting
 		onSuccess={() => goto(PROTECTED_PAGE_ENDPOINTS.TODO)}
 		successMessage={m['AddTodoPage.todoAdded']()}
 		errorMessage={m['AddTodoPage.addError']()}

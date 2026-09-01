@@ -1,5 +1,6 @@
-<script lang="ts" generics="Mutation extends FunctionReference<'mutation'>">
+<script lang="ts" generics="Mutation extends FunctionReference<'mutation' | 'action'>">
 	// COMPONENTS
+	import CaptchaField from '@/features/captcha/components/captcha-field.svelte';
 	import FormCheckbox from './form-checkbox.svelte';
 	import FormField from './form-field.svelte';
 	import FormInput from './form-input.svelte';
@@ -10,6 +11,7 @@
 	import { m } from '@/lib/paraglide/messages';
 
 	// HOOKS
+	import { useCaptcha } from '@/features/captcha/hooks/useCaptcha.svelte';
 	import { useForm } from './useForm.svelte.js';
 
 	// UTILS
@@ -32,6 +34,8 @@
 	type ExtraFieldsContext = FormFieldContext<FormValue<Mutation>>;
 	type Props = Omit<WithElementRef<HTMLAttributes<HTMLFormElement>>, 'onsubmit'> & {
 		function: Mutation;
+		functionType?: 'mutation' | 'action';
+		captchaAction?: string;
 		fields?: FieldConfig[];
 		extraFields?: Snippet<[ExtraFieldsContext]>;
 		onSuccess?: (result: FunctionReturnType<Mutation>) => void | Promise<void>;
@@ -50,6 +54,8 @@
 
 	let {
 		function: convexFunction,
+		functionType = 'mutation',
+		captchaAction,
 		fields = [],
 		extraFields,
 		onSuccess,
@@ -69,8 +75,14 @@
 		...restProps
 	}: Props = $props();
 
+	const captcha = useCaptcha();
 	const form = useForm({
 		function: () => convexFunction,
+		functionType: () => functionType,
+		captchaAction: () => captchaAction,
+		captchaToken: () => captcha.token,
+		executeCaptcha: captcha.execute,
+		resetCaptcha: captcha.reset,
 		fields: () => fields,
 		bindings: {
 			get values() {
@@ -101,6 +113,10 @@
 		uploadCancelledMessage: () => uploadCancelledMessage,
 		resetOnSuccess: () => resetOnSuccess
 	});
+	const handleCaptchaToken = (token: string) => {
+		captcha.setToken(token);
+		if (token) form.resumeAfterCaptcha();
+	};
 
 	const fieldKey = (field: FieldConfig, index: number) =>
 		field.kind === 'section' ? 'section-' + index : field.name;
@@ -168,6 +184,16 @@
 	{/each}
 
 	{@render extraFields?.(form.fieldContext)}
+
+	{#if captchaAction}
+		<CaptchaField
+			action={captchaAction}
+			executeOnDemand
+			onToken={handleCaptchaToken}
+			onReset={captcha.registerReset}
+			onExecute={captcha.registerExecute}
+		/>
+	{/if}
 
 	{@render children?.()}
 </form>

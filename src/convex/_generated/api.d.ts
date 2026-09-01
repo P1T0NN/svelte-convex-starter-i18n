@@ -71,6 +71,7 @@ import type * as tables_tasks_mutations_updateTodo from "../tables/tasks/mutatio
 import type * as tables_tasks_queries_fetchTodo from "../tables/tasks/queries/fetchTodo.js";
 import type * as tables_tasks_queries_fetchTodos from "../tables/tasks/queries/fetchTodos.js";
 import type * as tables_tasks_validators_todoValidators from "../tables/tasks/validators/todoValidators.js";
+import type * as turnstile_verifyTurnstile from "../turnstile/verifyTurnstile.js";
 import type * as utils_buildFilterWhere from "../utils/buildFilterWhere.js";
 import type * as utils_cursorPagination from "../utils/cursorPagination.js";
 import type * as wrappers_fetchOptimizedQuery from "../wrappers/fetchOptimizedQuery.js";
@@ -146,6 +147,7 @@ declare const fullApi: ApiFromModules<{
   "tables/tasks/queries/fetchTodo": typeof tables_tasks_queries_fetchTodo;
   "tables/tasks/queries/fetchTodos": typeof tables_tasks_queries_fetchTodos;
   "tables/tasks/validators/todoValidators": typeof tables_tasks_validators_todoValidators;
+  "turnstile/verifyTurnstile": typeof turnstile_verifyTurnstile;
   "utils/buildFilterWhere": typeof utils_buildFilterWhere;
   "utils/cursorPagination": typeof utils_cursorPagination;
   "wrappers/fetchOptimizedQuery": typeof wrappers_fetchOptimizedQuery;

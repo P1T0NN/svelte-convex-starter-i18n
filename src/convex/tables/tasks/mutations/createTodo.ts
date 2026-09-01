@@ -1,9 +1,13 @@
 // LIBRARIES
 import { ConvexError, v } from 'convex/values';
 import { AuditActions } from 'convex-audit-log';
+import { internal } from '../../../_generated/api.js';
 
 // BUILDERS
-import { authenticatedUploadMutation } from '../../../builders/convexFunctionBuilders.js';
+import {
+	authenticatedAction,
+	authenticatedUploadInternalMutation
+} from '../../../builders/convexFunctionBuilders.js';
 
 // CONFIG
 import { TODO_PRICE_BANDS } from '../../../../shared/features/todo/config.js';
@@ -18,20 +22,47 @@ import { createTodoSchema } from '../../../../shared/features/todo/schemas/todoS
 import { todoMutationResult } from '../validators/todoValidators';
 import { resolveStoredFileUrls } from '../../../storage/r2.js';
 import { getOwnerId } from '../../../betterAuth/helpers/requireIdentity.js';
+import { verifyTurnstileToken } from '../../../turnstile/verifyTurnstile.js';
 
 // TYPES
 import type { Doc } from '../../../_generated/dataModel.js';
 import type { TodoPriceBand } from '../../../../shared/features/todo/config.js';
 import type { BackendErrorData } from '../../../../shared/types/types.js';
 import type { WithoutSystemFields } from 'convex/server';
+import type { Infer } from 'convex/values';
 
-export const createTodo = authenticatedUploadMutation({
+const createTodoArgs = {
+	title: v.string(),
+	done: v.boolean(),
+	price: v.optional(v.number())
+};
+
+export const createTodo = authenticatedAction({
 	rateLimit: { name: 'tasks:create' },
 	args: {
-		title: v.string(),
-		done: v.boolean(),
-		price: v.optional(v.number())
+		...createTodoArgs,
+		uploadedFiles: v.optional(v.array(v.string())),
+		retainedFiles: v.optional(v.array(v.string())),
+		turnstileToken: v.string()
 	},
+	returns: todoMutationResult,
+	handler: async (ctx, args): Promise<Infer<typeof todoMutationResult>> => {
+		await verifyTurnstileToken(args.turnstileToken, 'create_todo');
+		return await ctx.runMutation(
+			internal.tables.tasks.mutations.createTodo.createTodoAfterTurnstile,
+			{
+				title: args.title,
+				done: args.done,
+				price: args.price,
+				uploadedFiles: args.uploadedFiles,
+				retainedFiles: args.retainedFiles
+			}
+		);
+	}
+});
+
+export const createTodoAfterTurnstile = authenticatedUploadInternalMutation({
+	args: createTodoArgs,
 	returns: todoMutationResult,
 	handler: async (ctx, args) => {
 		const parsed = createTodoSchema.safeParse(args);

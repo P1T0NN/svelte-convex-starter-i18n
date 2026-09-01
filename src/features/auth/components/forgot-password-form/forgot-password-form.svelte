@@ -1,6 +1,7 @@
 <script lang="ts">
 	// LIBRARIES
 	import { useAuth } from '../../hooks/useAuth.svelte';
+	import { useCaptcha } from '@/features/captcha/hooks/useCaptcha.svelte';
 	import { m } from '@/lib/paraglide/messages';
 
 	// CONSTANTS
@@ -14,6 +15,7 @@
 	import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp/index.js';
 	import PasswordInput from '@/components/ui/custom-components/password-input/password-input.svelte';
 	import { Spinner } from '@/components/ui/spinner/index.js';
+	import CaptchaField from '@/features/captcha/components/captcha-field.svelte';
 
 	// DATA
 	import { ERROR_MESSAGE_KEYS } from '@/shared/features/auth/data/authData';
@@ -24,6 +26,7 @@
 	let { ...restProps }: ComponentProps<typeof Card.Root> = $props();
 
 	const auth = useAuth();
+	const captcha = useCaptcha();
 
 	let step = $state<'email' | 'reset'>('email');
 	let email = $state('');
@@ -34,7 +37,12 @@
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		if (step === 'email') {
-			await auth.requestPasswordReset(email);
+			if (!captcha.token) return;
+			try {
+				await auth.requestPasswordReset(email, captcha.token);
+			} finally {
+				captcha.reset();
+			}
 			if (!auth.error) step = 'reset';
 			return;
 		}
@@ -44,7 +52,12 @@
 			return;
 		}
 
-		await auth.resetPassword(email, otp, password);
+		if (!captcha.token) return;
+		try {
+			await auth.resetPassword(email, otp, password, captcha.token);
+		} finally {
+			captcha.reset();
+		}
 	}
 </script>
 
@@ -103,6 +116,10 @@
 					</Field.Field>
 				{/if}
 
+				<Field.Field>
+					<CaptchaField onToken={captcha.setToken} onReset={captcha.registerReset} />
+				</Field.Field>
+
 				{#if auth.error}
 					<p class="text-sm font-medium text-red-500">
 						{m[ERROR_MESSAGE_KEYS[auth.error]]()}
@@ -111,14 +128,14 @@
 
 				<Field.Field>
 					{#if step === 'email'}
-						<Button type="submit" disabled={auth.submitting}>
+						<Button type="submit" disabled={auth.submitting || !captcha.token}>
 							{#if auth.submitting}
 								<Spinner />
 							{/if}
 							{m['AuthFeature.ForgotPasswordForm.sendResetCode']()}
 						</Button>
 					{:else}
-						<Button type="submit" disabled={auth.submitting || otp.length < 6}>
+						<Button type="submit" disabled={auth.submitting || otp.length < 6 || !captcha.token}>
 							{#if auth.submitting}
 								<Spinner />
 							{/if}

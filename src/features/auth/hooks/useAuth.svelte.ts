@@ -42,6 +42,10 @@ export function useAuth() {
 		error = toErrorCode(message ?? '', SERVER_MESSAGE_TO_CODE, 'SOMETHING_WENT_WRONG');
 	}
 
+	function captchaFetchOptions(captchaToken: string) {
+		return { fetchOptions: { headers: { 'x-captcha-response': captchaToken } } };
+	}
+
 	async function run(action: () => Promise<AuthResult>, onSuccess?: () => void) {
 		error = null;
 		submitting = true;
@@ -49,6 +53,7 @@ export function useAuth() {
 			const result = await action();
 			if (result?.error) {
 				if (result.error.code === 'BANNED_USER') {
+					// eslint-disable-next-line svelte/prefer-svelte-reactivity
 					const params = new URLSearchParams({ error: 'BANNED_USER' });
 					if (result.error.message) params.set('error_description', result.error.message);
 					// eslint-disable-next-line svelte/no-navigation-without-resolve
@@ -75,9 +80,10 @@ export function useAuth() {
 			return submitting;
 		},
 		setError,
-		signInWithEmail(email: string, password: string) {
+		signInWithEmail(email: string, password: string, captchaToken: string) {
 			return run(() =>
 				authClient.signIn.email({
+					...captchaFetchOptions(captchaToken),
 					email,
 					password,
 					callbackURL: PROTECTED_PAGE_ENDPOINTS.TODO
@@ -85,10 +91,17 @@ export function useAuth() {
 			);
 		},
 		// successMessage is authored by the calling .svelte (CodingRules: no text in utils).
-		signUpWithEmail(email: string, password: string, name: string, successMessage: string) {
+		signUpWithEmail(
+			email: string,
+			password: string,
+			name: string,
+			successMessage: string,
+			captchaToken: string
+		) {
 			return run(
 				() =>
 					authClient.signUp.email({
+						...captchaFetchOptions(captchaToken),
 						email,
 						password,
 						name
@@ -104,29 +117,42 @@ export function useAuth() {
 				}
 			);
 		},
-		sendVerificationOtp(email: string) {
+		sendVerificationOtp(email: string, captchaToken: string) {
 			return run(() =>
-				authClient.emailOtp.sendVerificationOtp({ email, type: 'email-verification' })
+				authClient.emailOtp.sendVerificationOtp({
+					...captchaFetchOptions(captchaToken),
+					email,
+					type: 'email-verification'
+				})
 			);
 		},
-		verifyEmail(email: string, otp: string) {
+		verifyEmail(email: string, otp: string, captchaToken: string) {
 			return run(
-				() => authClient.emailOtp.verifyEmail({ email, otp }),
+				() => authClient.emailOtp.verifyEmail({ ...captchaFetchOptions(captchaToken), email, otp }),
 				() => goto(PROTECTED_PAGE_ENDPOINTS.TODO)
 			);
 		},
-		requestPasswordReset(email: string) {
-			return run(() => authClient.emailOtp.requestPasswordReset({ email }));
+		requestPasswordReset(email: string, captchaToken: string) {
+			return run(() =>
+				authClient.emailOtp.requestPasswordReset({ ...captchaFetchOptions(captchaToken), email })
+			);
 		},
-		resetPassword(email: string, otp: string, password: string) {
+		resetPassword(email: string, otp: string, password: string, captchaToken: string) {
 			return run(
-				() => authClient.emailOtp.resetPassword({ email, otp, password }),
+				() =>
+					authClient.emailOtp.resetPassword({
+						...captchaFetchOptions(captchaToken),
+						email,
+						otp,
+						password
+					}),
 				() => goto(UNPROTECTED_PAGE_ENDPOINTS.SIGN_IN)
 			);
 		},
-		signInWithGoogle() {
+		signInWithGoogle(captchaToken: string) {
 			return run(() =>
 				authClient.signIn.social({
+					...captchaFetchOptions(captchaToken),
 					provider: 'google',
 					callbackURL: PROTECTED_PAGE_ENDPOINTS.TODO,
 					errorCallbackURL: UNPROTECTED_PAGE_ENDPOINTS.AUTH_ERROR

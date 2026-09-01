@@ -5,6 +5,7 @@ import type { BetterAuthPlugin } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { betterAuth, type BetterAuthOptions } from 'better-auth/minimal';
 import { admin } from 'better-auth/plugins/admin';
+import { captcha } from 'better-auth/plugins';
 import { emailOTP } from 'better-auth/plugins/email-otp';
 
 // CONVEX
@@ -140,6 +141,20 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
 			}
 		},
 		plugins: [
+			captcha({
+				provider: 'cloudflare-turnstile',
+				secretKey: process.env.TURNSTILE_SECRET_KEY!,
+				expectedAction: 'auth',
+				endpoints: [
+					'/sign-up/email',
+					'/sign-in/email',
+					'/sign-in/social',
+					'/email-otp/send-verification-otp',
+					'/email-otp/verify-email',
+					'/email-otp/request-password-reset',
+					'/email-otp/reset-password'
+				]
+			}),
 			bannedUserDetailsPlugin,
 			admin({ bannedUserMessage: 'BANNED_USER' }),
 			emailOTP({

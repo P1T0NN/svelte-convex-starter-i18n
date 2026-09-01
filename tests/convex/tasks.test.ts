@@ -6,7 +6,7 @@ import r2Test from '@convex-dev/r2/test';
 import rateLimiterTest from '@convex-dev/rate-limiter/test';
 import shardedCounterTest from '@convex-dev/sharded-counter/test';
 import auditLogTest from 'convex-audit-log/test';
-import { expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { convexTest } from 'convex-test';
 
 import { api, internal } from '../../src/convex/_generated/api';
@@ -15,6 +15,20 @@ import { detectImageContentType } from '../../src/convex/storage/r2';
 import { STORAGE_CONFIG } from '../../src/shared/features/storage/config';
 
 const modules = import.meta.glob('../../src/convex/**/*.ts');
+const turnstileToken = 'test-turnstile-token';
+
+beforeEach(() => {
+	vi.stubEnv('TURNSTILE_SECRET_KEY', 'test-turnstile-secret');
+	vi.stubGlobal(
+		'fetch',
+		vi.fn(async () => Response.json({ success: true, action: 'create_todo' }))
+	);
+});
+
+afterEach(() => {
+	vi.unstubAllEnvs();
+	vi.unstubAllGlobals();
+});
 
 function createTestContext() {
 	const t = convexTest(schema, modules);
@@ -40,9 +54,10 @@ test('rejects unauthenticated task reads and writes', async () => {
 	).rejects.toMatchObject({ data: { code: 'UNAUTHENTICATED' } });
 
 	await expect(
-		t.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+		t.action(api.tables.tasks.mutations.createTodo.createTodo, {
 			title: 'Unauthenticated task',
-			done: false
+			done: false,
+			turnstileToken
 		})
 	).rejects.toMatchObject({ data: { code: 'UNAUTHENTICATED' } });
 });
@@ -52,16 +67,18 @@ test('returns stable codes for expected task mutation failures', async () => {
 	const owner = t.withIdentity({ tokenIdentifier: 'task-errors', subject: 'task-errors' });
 
 	await expect(
-		owner.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+		owner.action(api.tables.tasks.mutations.createTodo.createTodo, {
 			title: 'Invalid price',
 			done: false,
-			price: 1.5
+			price: 1.5,
+			turnstileToken
 		})
 	).rejects.toMatchObject({ data: { code: 'INVALID_TODO_DATA' } });
 
-	const task = await owner.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+	const task = await owner.action(api.tables.tasks.mutations.createTodo.createTodo, {
 		title: 'Bulk delete limit',
-		done: false
+		done: false,
+		turnstileToken
 	});
 	await expect(
 		owner.mutation(api.tables.tasks.mutations.deleteTodo.deleteTodo, {
@@ -81,13 +98,15 @@ test('keeps task reads and writes scoped to the authenticated owner', async () =
 		subject: 'user-b'
 	});
 
-	const taskA = await ownerA.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+	const taskA = await ownerA.action(api.tables.tasks.mutations.createTodo.createTodo, {
 		title: 'Owner A task',
-		done: false
+		done: false,
+		turnstileToken
 	});
-	await ownerB.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+	await ownerB.action(api.tables.tasks.mutations.createTodo.createTodo, {
 		title: 'Owner B task',
-		done: false
+		done: false,
+		turnstileToken
 	});
 
 	const pageA = await ownerA.query(api.tables.tasks.queries.fetchTodos.fetchTodos, firstPage());
@@ -147,26 +166,29 @@ test('claims only uploaded R2 keys owned by the mutation caller', async () => {
 	).resolves.toBe(false);
 	await t.run((ctx) => ctx.db.patch(trackedUpload!._id, { status: 'uploaded' }));
 	await expect(
-		owner.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+		owner.action(api.tables.tasks.mutations.createTodo.createTodo, {
 			title: 'Duplicate upload',
 			done: false,
-			uploadedFiles: [generated.key, generated.key]
+			uploadedFiles: [generated.key, generated.key],
+			turnstileToken
 		})
 	).rejects.toMatchObject({ data: { code: 'DUPLICATE_UPLOAD_KEY' } });
 
 	await expect(
-		otherOwner.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+		otherOwner.action(api.tables.tasks.mutations.createTodo.createTodo, {
 			title: 'Wrong owner',
 			done: false,
-			uploadedFiles: [generated.key]
+			uploadedFiles: [generated.key],
+			turnstileToken
 		})
 	).rejects.toMatchObject({ data: { code: 'UPLOAD_NOT_FOUND' } });
 	expect(await t.run((ctx) => ctx.db.get(trackedUpload!._id))).not.toBeNull();
 
-	const task = await owner.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+	const task = await owner.action(api.tables.tasks.mutations.createTodo.createTodo, {
 		title: 'Todo with upload',
 		done: false,
-		uploadedFiles: [generated.key]
+		uploadedFiles: [generated.key],
+		turnstileToken
 	});
 	const stored = await t.run((ctx) => ctx.db.get('tasks', task._id));
 	const fetched = await owner.query(api.tables.tasks.queries.fetchTodo.fetchTodo, { id: task._id });
@@ -248,15 +270,17 @@ test('returns owner-scoped totals while loading paginated task pages', async () 
 	const ownerB = t.withIdentity({ tokenIdentifier: 'other-owner', subject: 'other-owner' });
 
 	for (let index = 0; index < 12; index += 1) {
-		await ownerA.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+		await ownerA.action(api.tables.tasks.mutations.createTodo.createTodo, {
 			title: `Owner A task ${index}`,
 			done: index % 2 === 0,
-			price: index % 3 === 0 ? 11000 : 0
+			price: index % 3 === 0 ? 11000 : 0,
+			turnstileToken
 		});
 	}
-	await ownerB.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+	await ownerB.action(api.tables.tasks.mutations.createTodo.createTodo, {
 		title: 'Owner B task',
-		done: true
+		done: true,
+		turnstileToken
 	});
 
 	const pages: string[] = [];
@@ -344,9 +368,10 @@ test('returns a retry delay when an actor exceeds the mutation rate limit', asyn
 
 	for (let index = 0; index < 21; index += 1) {
 		try {
-			await owner.mutation(api.tables.tasks.mutations.createTodo.createTodo, {
+			await owner.action(api.tables.tasks.mutations.createTodo.createTodo, {
 				title: `Rate limit task ${index}`,
-				done: false
+				done: false,
+				turnstileToken
 			});
 			succeeded += 1;
 		} catch (error) {

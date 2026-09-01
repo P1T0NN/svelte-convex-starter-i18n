@@ -435,6 +435,7 @@
 		"rateLimitMultiple": "You hit the rate limit. Try again in {seconds} seconds.",
 		"unauthenticated": "Please sign in and try again.",
 		"forbidden": "You do not have permission to do that.",
+		"captchaFailed": "Please complete the security check and try again.",
 		"invalidTodoData": "Please check the todo details and try again.",
 		"todoNotFound": "This todo could not be found.",
 		"invalidRetainedImage": "One of the selected images is no longer valid.",

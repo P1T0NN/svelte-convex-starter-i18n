@@ -92,7 +92,7 @@ const adminQueryContext = customCtx(async (ctx: QueryCtx) => ({
 export const mutation = customMutation(rawMutation, publicMutationContext);
 export const action = customAction(rawAction, publicActionContext);
 export const authenticatedMutation = customMutation(rawMutation, authenticatedMutationContext);
-export const authenticatedUploadMutation = customMutation(rawMutation, {
+const authenticatedUploadContext = (rateLimited: boolean) => ({
 	args: {
 		uploadedFiles: v.optional(v.array(v.string())),
 		retainedFiles: v.optional(v.array(v.string()))
@@ -102,7 +102,9 @@ export const authenticatedUploadMutation = customMutation(rawMutation, {
 		args: { uploadedFiles?: string[]; retainedFiles?: string[] },
 		options: RateLimitedFunctionOptions
 	) => {
-		const authenticated = await getAuthenticatedMutationContext(ctx, options);
+		const identity = await requireIdentity(ctx);
+		if (rateLimited) await enforceRateLimit(ctx, options.rateLimit, identity);
+		const authenticated = { db: aggregateTriggers.wrapDB(ctx).db, identity };
 		const keys = args.uploadedFiles;
 		if (keys && keys.length > STORAGE_CONFIG.maxFilesPerUpload) {
 			throw new ConvexError<BackendErrorData>({
@@ -142,6 +144,15 @@ export const authenticatedUploadMutation = customMutation(rawMutation, {
 		};
 	}
 });
+
+export const authenticatedUploadMutation = customMutation(
+	rawMutation,
+	authenticatedUploadContext(true)
+);
+export const authenticatedUploadInternalMutation = customMutation(
+	rawInternalMutation,
+	authenticatedUploadContext(false)
+);
 export const authenticatedAction = customAction(rawAction, authenticatedActionContext);
 export const authenticatedQuery = customQuery(rawQuery, authenticatedQueryContext);
 export const adminMutation = customMutation(rawMutation, adminMutationContext);

@@ -1,6 +1,7 @@
 <script lang="ts">
 	// LIBRARIES
 	import { useAuth } from '../../hooks/useAuth.svelte';
+	import { useCaptcha } from '@/features/captcha/hooks/useCaptcha.svelte';
 	import { useSearchParams } from '@/hooks/useSearchParams.svelte';
 	import { m } from '@/lib/paraglide/messages';
 	import { onMount } from 'svelte';
@@ -16,6 +17,7 @@
 	import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp/index.js';
 	import { Spinner } from '@/components/ui/spinner/index.js';
 	import { toast } from 'svelte-sonner';
+	import CaptchaField from '@/features/captcha/components/captcha-field.svelte';
 
 	// DATA
 	import { ERROR_MESSAGE_KEYS } from '@/shared/features/auth/data/authData';
@@ -26,6 +28,7 @@
 	let { ...restProps }: ComponentProps<typeof Card.Root> = $props();
 
 	const auth = useAuth();
+	const captcha = useCaptcha();
 	const params = useSearchParams();
 
 	// Pre-fill from the redirect after sign-up: /verify-email?email=...
@@ -58,13 +61,22 @@
 
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
-		await auth.verifyEmail(email, otp);
+		if (!captcha.token) return;
+		try {
+			await auth.verifyEmail(email, otp, captcha.token);
+		} finally {
+			captcha.reset();
+		}
 	}
 
 	async function handleResend() {
-		if (auth.submitting || resendCooldown > 0 || email.length === 0) return;
+		if (auth.submitting || resendCooldown > 0 || email.length === 0 || !captcha.token) return;
 
-		await auth.sendVerificationOtp(email);
+		try {
+			await auth.sendVerificationOtp(email, captcha.token);
+		} finally {
+			captcha.reset();
+		}
 
 		if (auth.error) return;
 
@@ -107,6 +119,10 @@
 					</InputOTP>
 				</Field.Field>
 
+				<Field.Field>
+					<CaptchaField onToken={captcha.setToken} onReset={captcha.registerReset} />
+				</Field.Field>
+
 				{#if auth.error}
 					<p class="text-sm font-medium text-red-500">
 						{m[ERROR_MESSAGE_KEYS[auth.error]]()}
@@ -114,7 +130,7 @@
 				{/if}
 
 				<Field.Field>
-					<Button type="submit" disabled={auth.submitting || otp.length < 6}>
+					<Button type="submit" disabled={auth.submitting || otp.length < 6 || !captcha.token}>
 						{#if auth.submitting}
 							<Spinner />
 						{/if}
@@ -132,7 +148,7 @@
 				variant="outline"
 				size="sm"
 				type="button"
-				disabled={auth.submitting || resendCooldown > 0 || email.length === 0}
+				disabled={auth.submitting || resendCooldown > 0 || email.length === 0 || !captcha.token}
 				onclick={handleResend}
 			>
 				{#if resendCooldown > 0}

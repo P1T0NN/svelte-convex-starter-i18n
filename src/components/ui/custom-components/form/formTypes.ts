@@ -6,21 +6,21 @@ import type { PreviewFile } from '@/features/uploadFile/types/uploadFileTypes.js
 export type FormFieldValue = string | number | boolean;
 export type FormValues = Record<string, FormFieldValue>;
 
-type MutationValue<Mutation extends FunctionReference<'mutation'>> =
+type MutationValue<Mutation extends FunctionReference<'mutation' | 'action'>> =
 	FunctionArgs<Mutation>[keyof FunctionArgs<Mutation>];
-export type FormValue<Mutation extends FunctionReference<'mutation'>> =
+export type FormValue<Mutation extends FunctionReference<'mutation' | 'action'>> =
 	MutationValue<Mutation> | FormFieldValue;
-export type MutationValues<Mutation extends FunctionReference<'mutation'>> = Partial<
+export type MutationValues<Mutation extends FunctionReference<'mutation' | 'action'>> = Partial<
 	Omit<FunctionArgs<Mutation>, 'uploadedFiles' | 'retainedFiles'>
 > &
 	Record<string, FormValue<Mutation> | undefined>;
-export type UploadPrepareContext<Mutation extends FunctionReference<'mutation'>> = {
+export type UploadPrepareContext<Mutation extends FunctionReference<'mutation' | 'action'>> = {
 	values: MutationValues<Mutation>;
 	uploadedFiles: string[];
 	retainedFiles: string[];
 	uploadFiles: PreviewFile[];
 };
-export type PreparedMutationArgs<Mutation extends FunctionReference<'mutation'>> = Omit<
+export type PreparedMutationArgs<Mutation extends FunctionReference<'mutation' | 'action'>> = Omit<
 	FunctionArgs<Mutation>,
 	'uploadedFiles' | 'retainedFiles'
 >;
