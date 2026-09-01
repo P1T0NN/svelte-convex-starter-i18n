@@ -1,0 +1,449 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"example_message": "Hello world {username}",
+
+	"AuthFeature": {
+		"AuthData": {
+			"indefinitely": "Indefinitely",
+			"oneDay": "1 day",
+			"sevenDays": "7 days",
+			"thirtyDays": "30 days"
+		},
+		"ForgotPasswordForm": {
+			"forgotYourPassword": "Forgot your password?",
+			"emailResetDescription": "Enter your email and we'll send you a code to reset your password.",
+			"setNewPassword": "Set a new password",
+			"resetCodeDescription": "Enter the code we emailed you, then choose a new password.",
+			"email": "Email",
+			"verificationCode": "Verification code",
+			"newPassword": "New password",
+			"passwordLengthDescription": "Must be at least 8 characters long.",
+			"confirmPassword": "Confirm password",
+			"sendResetCode": "Send reset code",
+			"resetPassword": "Reset password",
+			"backToSignIn": "Back to sign in"
+		},
+		"LogoutButton": {
+			"signedOutSuccessfully": "Signed out successfully",
+			"signingOut": "Signing out",
+			"signingOutEllipsis": "Signing out..."
+		},
+		"SignInForm": {
+			"welcomeBack": "Welcome back",
+			"loginDescription": "Enter your email below to login to your account",
+			"email": "Email",
+			"password": "Password",
+			"rememberSession": "Remember your session.",
+			"forgotYourPassword": "Forgot your password?",
+			"signIn": "Sign In",
+			"continueWithGoogle": "Continue with Google",
+			"noAccount": "Don't have an account?",
+			"signUp": "Sign up"
+		},
+		"SignUpForm": {
+			"createAccount": "Create an account",
+			"createAccountDescription": "Enter your information below to create your account",
+			"fullName": "Full Name",
+			"fullNamePlaceholder": "John Doe",
+			"email": "Email",
+			"emailDescription": "We'll use this to contact you. We will not share your email with anyone else.",
+			"password": "Password",
+			"passwordLengthDescription": "Must be at least 8 characters long.",
+			"confirmPassword": "Confirm Password",
+			"confirmPasswordDescription": "Please confirm your password.",
+			"continueWithGoogle": "Continue with Google",
+			"alreadyHaveAccount": "Already have an account?",
+			"signIn": "Sign in",
+			"verificationCodeToast": "Check your email for a verification code."
+		},
+		"VerifyEmailForm": {
+			"verifyYourEmail": "Verify your email",
+			"verifyEmailDescription": "We sent a 6-digit code to your inbox. Enter it below to finish signing up.",
+			"email": "Email",
+			"emailPlaceholder": "m@example.com",
+			"verificationCode": "Verification code",
+			"verifyEmail": "Verify email",
+			"didntReceiveCode": "Didn't receive the code?",
+			"resendCodeIn": "Resend code in {seconds}s",
+			"resendCode": "Resend code",
+			"anotherVerificationCode": "We sent you another verification code.",
+			"backToSignIn": "Back to sign in"
+		}
+	},
+	"SearchFeature": {
+		"SearchInput": {
+			"searchPlaceholder": "Search...",
+			"clearSearch": "Clear search"
+		}
+	},
+	"UploadFileFeature": {
+		"UploadFileDropzone": {
+			"clickOrDragAndDrop": "Click or drag & drop",
+			"addOneOrMoreImages": "Add one or more images",
+			"addOneImage": "Add one image"
+		},
+		"UploadFilePreviewItem": {
+			"uploadedImage": "Uploaded image",
+			"coverImage": "Cover image",
+			"setAsCover": "Set as cover",
+			"cover": "Cover",
+			"remove": "Remove",
+			"moveLeft": "Move left",
+			"moveRight": "Move right"
+		}
+	},
+	"AuthErrorPage": {
+		"accountBannedTitle": "Account banned",
+		"authenticationErrorTitle": "Authentication error",
+		"accessBlocked": "Access blocked",
+		"yourAccountIsBanned": "Your account is banned",
+		"bannedDescription": "You have been banned from this application. Please contact support if you believe this is an error.",
+		"genericDescription": "Something went wrong. Please try again.",
+		"remaining": "Remaining: {time}.",
+		"banEnds": "Ban ends: {date}.",
+		"banDoesNotExpire": "This ban does not expire.",
+		"tryAgain": "Try again",
+		"goHome": "Go home"
+	},
+	"ErrorPage": {
+		"somethingWentWrong": "Something went wrong.",
+		"tryAgain": "Try again",
+		"goHome": "Go home"
+	},
+	"AddTodoPage": {
+		"pageTitle": "Add todo",
+		"newTodo": "New Todo",
+		"description": "Add something to the list.",
+		"title": "Title",
+		"done": "Done",
+		"images": "Images",
+		"todoAdded": "Todo added!",
+		"addError": "Couldn't add this todo.",
+		"addTodo": "Add todo"
+	},
+	"EditTodoPage": {
+		"EditTodoButton": {
+			"editTodo": "Edit Todo",
+			"description": "Change the title or mark it done.",
+			"title": "Title",
+			"done": "Done",
+			"images": "Images",
+			"todoUpdated": "Todo updated!",
+			"updateError": "Couldn't update this todo.",
+			"saveChanges": "Save changes"
+		}
+	},
+	"TodoPage": {
+		"DeleteTodoButton": {
+			"todoDeleted": "Todo deleted.",
+			"deleteError": "Couldn't delete this todo.",
+			"deleteTodo": "Delete todo",
+			"deleteConfirmation": "Delete todo?",
+			"deleteDescription": "Are you sure you want to delete “{title}”? This also deletes its stored images and cannot be undone.",
+			"cancel": "Cancel",
+			"delete": "Delete"
+		}
+	},
+	"TestsDataTablePage": {
+		"DeleteButton": {
+			"deletedTasks": "Deleted {count} task(s)",
+			"deleteFailed": "Delete failed",
+			"deleteSelected": "Delete ({count})",
+			"close": "Close",
+			"deleteConfirmation": "Delete {count} task(s)?",
+			"deleteDescription": "This permanently deletes the selected tasks and their stored images.",
+			"cancel": "Cancel",
+			"delete": "Delete"
+		}
+	},
+	"AdminUsersPage": {
+		"pageTitle": "Users | Admin",
+		"searchPlaceholder": "Search names or emails...",
+		"clearFilters": "Clear filters ({count})",
+		"userColumn": "User",
+		"roleColumn": "Role",
+		"statusColumn": "Status",
+		"joinedColumn": "Joined",
+		"loadError": "Couldn't load users.",
+		"noMatchingUsers": "No matching users",
+		"noUsersYet": "No users yet",
+		"searchEmptyDescription": "Nothing matches \"{term}\".",
+		"filtersEmptyDescription": "Nothing matches these filters.",
+		"emptyDescription": "There are no accounts to display.",
+		"AdminUsersHeader": {
+			"adminLabel": "Admin",
+			"usersFound": "Users - {count} found",
+			"usersLabel": "Users",
+			"foundLabel": "found",
+			"filteredLabel": "Users - Filtered",
+			"description": "Review accounts, roles, and verification status."
+		},
+		"AdminUsersTableItem": {
+			"suspended": "Suspended",
+			"verified": "Verified",
+			"unverified": "Unverified"
+		}
+	},
+	"AdminUserPage": {
+		"pageTitle": "User | Admin",
+		"AdminUserHeader": {
+			"backToUsers": "Back to users"
+		},
+		"AdminUserTabs": {
+			"userDetails": "User details",
+			"profile": "Profile",
+			"settings": "Settings",
+			"sessions": "Sessions",
+			"logs": "Logs"
+		},
+		"AdminUserTabsProfile": {
+			"loadError": "Couldn't load this user's profile.",
+			"userNotFound": "User not found",
+			"userNotFoundDescription": "This account may have been removed or the link is invalid."
+		},
+		"AdminUserTabsProfileBanned": {
+			"accountBanned": "This account is banned",
+			"expires": "Expires",
+			"noExpirationSet": "No expiration set",
+			"reason": "Reason"
+		},
+		"AdminUserTabsProfileData": {
+			"verified": "Verified",
+			"unverified": "Unverified",
+			"banned": "Banned",
+			"active": "Active",
+			"id": "ID",
+			"copyUserId": "Copy user ID",
+			"appId": "App ID",
+			"copyAppUserId": "Copy app user ID"
+		},
+		"AdminUserTabsProfileLifecycle": {
+			"lifecycle": "Lifecycle",
+			"created": "Created",
+			"lastUpdated": "Last updated"
+		},
+		"AdminUserTabsSessions": {
+			"sessions": "Sessions",
+			"description": "Sign-in sessions recorded for this user.",
+			"loadError": "Couldn't load this user's sessions.",
+			"noSessions": "No sessions",
+			"noSessionsDescription": "No sign-in sessions are recorded for this user."
+		},
+		"AdminUserTabsSessionsItem": {
+			"active": "Active",
+			"expired": "Expired",
+			"impersonated": "Impersonated",
+			"ipUnavailable": "IP unavailable",
+			"userAgentUnavailable": "User agent unavailable",
+			"impersonatedBy": "by {user}",
+			"started": "Started",
+			"lastActive": "Last active",
+			"expires": "Expires"
+		},
+		"AdminUserTabsLogs": {
+			"logs": "Logs",
+			"description": "Audit activity recorded for this user.",
+			"loadError": "Couldn't load this user's audit logs.",
+			"noActivity": "No activity yet",
+			"noActivityDescription": "No audit logs are recorded for this user."
+		},
+		"AdminUserTabsLogsItem": {
+			"resource": "Resource",
+			"resourceWithId": "{type} {id}"
+		},
+		"AdminUserTabsSettings": {
+			"loadError": "Couldn't load this user's settings.",
+			"userNotFound": "User not found",
+			"userNotFoundDescription": "This account may have been removed or the link is invalid."
+		},
+		"AdminUserTabsSettingsAccess": {
+			"userRole": "User",
+			"adminRole": "Admin",
+			"access": "Access",
+			"description": "Manage this user's role and account access.",
+			"role": "Role",
+			"pendingRoleChange": "Pending — save to change the role to {role}.",
+			"adminsCanManage": "Admins can manage users from this area.",
+			"accountAccess": "Account access",
+			"banned": "Banned",
+			"active": "Active",
+			"accessBlockedUntil": "Access blocked until {date}.",
+			"accessBlockedNoExpiration": "Access is blocked with no expiration set.",
+			"userCanSignIn": "The user can sign in normally."
+		},
+		"AdminUserTabsSettingsDangerZone": {
+			"userDeleted": "User deleted.",
+			"deleteError": "Couldn't delete this user.",
+			"dangerZone": "Danger zone",
+			"description": "Permanent account actions. These actions cannot be undone.",
+			"deleteAccount": "Delete account",
+			"deleteDescription": "Removes the account, sessions, and linked authentication accounts.",
+			"deleteConfirmationTitle": "Delete {name}?",
+			"deleteConfirmationDescription": "This permanently removes the account and all of its sessions and linked accounts.",
+			"typeToConfirm": "Type {email} to confirm",
+			"cancel": "Cancel"
+		},
+		"BanUserDialog": {
+			"userBanned": "User banned.",
+			"banError": "Couldn't ban this user.",
+			"banUser": "Ban user",
+			"banTitle": "Ban {name}?",
+			"banDescription": "Banning the user immediately ends their active sessions.",
+			"reason": "Reason",
+			"reasonPlaceholder": "Optional reason for the audit trail",
+			"duration": "Duration",
+			"cancel": "Cancel"
+		},
+		"SaveRoleButton": {
+			"roleUpdateError": "Couldn't update this user's role.",
+			"roleUpdated": "User role updated.",
+			"saveRole": "Save role"
+		},
+		"UnbanUserButton": {
+			"unbanError": "Couldn't unban this user.",
+			"userUnbanned": "User unbanned.",
+			"unbanUser": "Unban user"
+		}
+	},
+	"AdminLogsPage": {
+		"pageTitle": "Logs | Admin",
+		"adminLabel": "Admin",
+		"auditLogs": "Audit logs",
+		"description": "Review activity recorded across the application.",
+		"eventColumn": "Event",
+		"severityColumn": "Severity",
+		"actorColumn": "Actor",
+		"resourceColumn": "Resource",
+		"timeColumn": "Time",
+		"actor": "Actor: {actor}",
+		"system": "System",
+		"resource": "Resource",
+		"resourceWithId": "{type} {id}",
+		"none": "None",
+		"loadError": "Couldn't load audit logs.",
+		"noActivity": "No activity yet",
+		"noActivityDescription": "No audit logs have been recorded."
+	},
+	"Components": {
+		"DataTable": {
+			"emptyTitle": "No items yet",
+			"emptyDescription": "There is nothing to show yet."
+		},
+		"DataList": {
+			"emptyTitle": "No items yet",
+			"emptyDescription": "There is nothing to show yet."
+		},
+		"ErrorComponent": {
+			"somethingWentWrong": "Something went wrong.",
+			"retry": "Retry"
+		},
+		"PaginatedData": {
+			"page": "Page {page}",
+			"pageWithTotal": "Page {page} / {total}",
+			"previousPage": "Previous page",
+			"nextPage": "Next page"
+		},
+		"DataTableItem": {
+			"selectRow": "Select row"
+		},
+		"DataTableSelectionBar": {
+			"selected": "Selected",
+			"item": "item",
+			"items": "items",
+			"clearSelection": "Clear selection",
+			"clear": "Clear"
+		},
+		"InfiniteScroll": {
+			"error": "Unable to load more items.",
+			"loading": "Loading more items...",
+			"loadMore": "Load more",
+			"retry": "Try again",
+			"end": "No more items."
+		},
+		"PasswordInput": {
+			"hidePassword": "Hide password",
+			"showPassword": "Show password"
+		},
+		"NativeSelect": {
+			"select": "Select…"
+		},
+		"NativeSheet": {
+			"close": "Close",
+			"fallbackError": "This browser cannot render the native sheet, and its fallback could not be loaded."
+		},
+		"NativeSheetFallback": {
+			"open": "Open sheet",
+			"description": "Displays the sheet content."
+		},
+		"NativeTooltip": {
+			"fallbackError": "This browser cannot render the native tooltip, and its fallback could not be loaded."
+		},
+		"NativeSidebar": {
+			"label": "Sidebar",
+			"mobileNavigation": "Mobile navigation"
+		},
+		"NativeSidebarUser": {
+			"user": "User",
+			"openAccountMenu": "Open account menu",
+			"logOut": "Log out"
+		},
+		"NativeSidebarPageHeader": {
+			"title": "Todos",
+			"openNavigation": "Open navigation"
+		},
+		"CopyValue": {
+			"copy": "Copy {label}",
+			"copied": "{label} copied"
+		},
+		"Form": {
+			"savedSuccessfully": "Saved successfully.",
+			"somethingWentWrong": "Something went wrong.",
+			"fixHighlightedFields": "Please fix the highlighted fields.",
+			"uploadFailed": "Failed to upload file.",
+			"uploadCancelled": "File upload was cancelled."
+		},
+		"FormUploadFile": {
+			"preparingFiles": "Preparing files...",
+			"uploadingFiles": "Uploading files",
+			"uploadProgress": "File upload progress"
+		},
+		"Header": {
+			"todo": "Todo",
+			"signOut": "Sign out",
+			"signIn": "Sign in"
+		},
+		"SvelteHead": {
+			"home": "Home"
+		}
+	},
+	"ValidationMessages": {
+		"fallback": "Please check this field.",
+		"requiredValue": "Please enter a value.",
+		"requiredField": "Please fill this in.",
+		"validValue": "Please enter a valid value.",
+		"passwordsDoNotMatch": "Passwords do not match.",
+		"invalidEmail": "Please enter a valid email address.",
+		"passwordTooShort": "Password must be at least 8 characters long.",
+		"userAlreadyExists": "An account with this email already exists.",
+		"invalidOtp": "That code is incorrect. Check it and try again.",
+		"otpExpired": "That code has expired. Request a new one.",
+		"tooManyAttempts": "Too many attempts. Try again in a few minutes.",
+		"somethingWentWrong": "Something went wrong. Please try again."
+	},
+	"BackendMessages": {
+		"rateLimitSingle": "You hit the rate limit. Try again in 1 second.",
+		"rateLimitMultiple": "You hit the rate limit. Try again in {seconds} seconds.",
+		"unauthenticated": "Please sign in and try again.",
+		"forbidden": "You do not have permission to do that.",
+		"invalidTodoData": "Please check the todo details and try again.",
+		"todoNotFound": "This todo could not be found.",
+		"invalidRetainedImage": "One of the selected images is no longer valid.",
+		"duplicateRetainedImage": "The same image cannot be selected more than once.",
+		"duplicateUploadKey": "The same upload cannot be submitted more than once.",
+		"uploadNotFound": "The upload could not be found.",
+		"invalidUploadNamespace": "The upload location is invalid.",
+		"invalidUpload": "The selected file is invalid.",
+		"tooManyFiles": "You can upload at most {maxFiles} files.",
+		"tooManyTodos": "You can delete at most {maxTodos} todos at once."
+	}
+}
