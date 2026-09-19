@@ -2,6 +2,9 @@ import { literals } from 'convex-helpers/validators';
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
+// VALIDATORS
+import { orderStatus } from './tables/orders/validators/orderValidators.js';
+
 export const tables = {
 	tasks: defineTable({
 		ownerId: v.optional(v.string()),
@@ -36,7 +39,17 @@ export const tables = {
 	})
 		.index('by_key', ['key'])
 		.index('by_owner_id_created_at', ['ownerId', 'createdAt'])
-		.index('by_created_at', ['createdAt'])
+		.index('by_created_at', ['createdAt']),
+	orders: defineTable({
+		orderNumber: v.string(),
+		customerId: v.string(),
+		status: orderStatus,
+		total: v.number(),
+		currency: v.string(),
+		placedAt: v.number()
+	})
+		.index('by_placed_at', ['placedAt'])
+		.index('by_status_placed_at', ['status', 'placedAt'])
 };
 
 export default defineSchema(tables);

@@ -4,6 +4,9 @@ import { goto } from '$app/navigation';
 // LIBRARIES
 import { authClient } from '../lib/authClient';
 
+// TYPES
+import type { AuthActionResult } from '../lib/runAuthAction';
+
 // COMPONENTS
 import { toast } from 'svelte-sonner';
 
@@ -21,8 +24,6 @@ import { SERVER_MESSAGE_TO_CODE } from '@/shared/features/auth/data/authData';
 
 // TYPES
 import type { SignUpErrorCode } from '@/shared/features/auth/types/authTypes';
-
-type AuthResult = { error?: { code?: string; message?: string } | null } | null | undefined;
 
 /**
  * Shared submit plumbing for the auth forms — owns `error`/`submitting` state,
@@ -46,7 +47,7 @@ export function useAuth() {
 		return { fetchOptions: { headers: { 'x-captcha-response': captchaToken } } };
 	}
 
-	async function run(action: () => Promise<AuthResult>, onSuccess?: () => void) {
+	async function run(action: () => Promise<AuthActionResult>, onSuccess?: () => void) {
 		error = null;
 		submitting = true;
 		try {

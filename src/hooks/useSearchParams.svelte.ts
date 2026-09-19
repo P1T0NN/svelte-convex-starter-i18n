@@ -8,11 +8,15 @@ import { page } from '$app/state';
  * pathname and the hash. Reading is unrestricted — `get`/`read` work for any
  * key. Callers keep their own `$state` (debounce, min-chars, mode) on top.
  *
+ * Writes are shallow (`pushState`/`replaceState`), so SvelteKit leaves
+ * `page.url` — and therefore `get`/`read` — at the last navigated URL. Keep
+ * your own `$state` for the values you write; URL is the shareable seed.
+ *
  * `get(key)` — raw read (`string | null`, matches `URLSearchParams.get`).
  * `read(key)` — read with `''` fallback (the string url-mode state wants).
  * `write(values)` updates the owned params (replace history by default; pass
  * `{ history: 'push' }` when each change should create a history entry).
- * `onPopState(cb)` — re-run `cb` on back/forward; returns the cnleanup.
+ * `onPopState(cb)` — re-run `cb` on back/forward; returns the cleanup.
  */
 export function useSearchParams(
 	keys: string[] | (() => string[]) = [],

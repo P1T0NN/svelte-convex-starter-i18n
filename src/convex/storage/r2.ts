@@ -12,6 +12,9 @@ import {
 } from '../builders/convexFunctionBuilders.js';
 import { getOwnerId, requireIdentity } from '../betterAuth/helpers/requireIdentity.js';
 
+// STORAGE
+import { getUploadByKey } from './getUploadByKey.js';
+
 // CONFIG
 import { STORAGE_CONFIG } from '../../shared/features/storage/config.js';
 
@@ -30,19 +33,13 @@ export const r2 = new R2(components.r2, {
 const clientApi = r2.clientApi<DataModel>({
 	checkDelete: async (ctx, _bucket, key) => {
 		const identity = await requireIdentity(ctx);
-		const upload = await ctx.db
-			.query('storageUploads')
-			.withIndex('by_key', (query) => query.eq('key', key))
-			.unique();
+		const upload = await getUploadByKey(ctx, key);
 		if (!upload || upload.ownerId !== getOwnerId(identity)) {
 			throw new ConvexError<BackendErrorData>({ code: 'UPLOAD_NOT_FOUND' });
 		}
 	},
 	onDelete: async (ctx, _bucket, key) => {
-		const upload = await ctx.db
-			.query('storageUploads')
-			.withIndex('by_key', (query) => query.eq('key', key))
-			.unique();
+		const upload = await getUploadByKey(ctx, key);
 		if (upload) await ctx.db.delete(upload._id);
 	}
 });

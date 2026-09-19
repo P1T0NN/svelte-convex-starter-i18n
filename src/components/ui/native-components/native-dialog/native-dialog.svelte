@@ -16,10 +16,12 @@
 	let {
 		trigger,
 		children,
+		'aria-labelledby': labelledBy,
 		class: className
 	}: {
 		trigger?: Snippet<[{ open: () => void }]>;
 		children: Snippet<[{ close: () => void }]>;
+		'aria-labelledby'?: string;
 		class?: string;
 	} = $props();
 
@@ -29,8 +31,8 @@
 		dialogEl = element;
 	}
 
-	const open = () => dialogEl?.showModal();
-	const close = () => dialogEl?.close();
+	export const open = () => dialogEl?.showModal();
+	export const close = () => dialogEl?.close();
 </script>
 
 {#if trigger}
@@ -38,6 +40,7 @@
 {/if}
 
 <dialog
+	aria-labelledby={labelledBy}
 	{@attach setDialogElement}
 	oncancel={(e) => e.preventDefault()}
 	class={cn(

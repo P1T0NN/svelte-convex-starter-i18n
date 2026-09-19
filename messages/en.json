@@ -2,6 +2,17 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"example_message": "Hello world {username}",
 
+	"AnalyticsFeature": {
+		"AnalyticsData": {
+			"revenue": "Revenue",
+			"orders": "Orders",
+			"customers": "Customers",
+			"averageOrderValue": "Avg. order value"
+		},
+		"AnalyticsStatsCard": {
+			"vsPreviousPeriod": "vs previous period"
+		}
+	},
 	"AuthFeature": {
 		"AuthData": {
 			"indefinitely": "Indefinitely",
@@ -303,6 +314,23 @@
 			"unbanError": "Couldn't unban this user.",
 			"userUnbanned": "User unbanned.",
 			"unbanUser": "Unban user"
+		}
+	},
+	"AdminDashboardPage": {
+		"pageTitle": "Dashboard | Admin",
+		"adminLabel": "Admin",
+		"dashboard": "Dashboard",
+		"statsLoadError": "Couldn't load dashboard stats.",
+		"AdminDashboardHeaderTimeranges": {
+			"timeRangeLabel": "Time range",
+			"today": "Today",
+			"last7Days": "7d",
+			"last30Days": "30d",
+			"last90Days": "90d"
+		},
+		"AdminDashboardHeaderCustomCalendar": {
+			"custom": "Custom",
+			"rangeTooLong": "You cannot select more than 366 days at once"
 		}
 	},
 	"AdminLogsPage": {

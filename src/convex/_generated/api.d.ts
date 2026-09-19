@@ -14,6 +14,9 @@ import type * as aggregates_helpers_getTotalSizeAggregate from "../aggregates/he
 import type * as aggregates_triggersAggregate from "../aggregates/triggersAggregate.js";
 import type * as aggregates_types_aggregateTypes from "../aggregates/types/aggregateTypes.js";
 import type * as aggregates_utils_getPrefixRangeBoundsAggregate from "../aggregates/utils/getPrefixRangeBoundsAggregate.js";
+import type * as analytics_helpers_getDashboardStats from "../analytics/helpers/getDashboardStats.js";
+import type * as analytics_queries_fetchDashboard from "../analytics/queries/fetchDashboard.js";
+import type * as analytics_validators_analyticsValidators from "../analytics/validators/analyticsValidators.js";
 import type * as auditLogs_helpers_logAuditBulk from "../auditLogs/helpers/logAuditBulk.js";
 import type * as auditLogs_helpers_logAuditChange from "../auditLogs/helpers/logAuditChange.js";
 import type * as auditLogs_helpers_logAuditEvent from "../auditLogs/helpers/logAuditEvent.js";
@@ -55,7 +58,10 @@ import type * as migrations_types_migrationTypes from "../migrations/types/migra
 import type * as rateLimits_helpers_enforceRateLimit from "../rateLimits/helpers/enforceRateLimit.js";
 import type * as rateLimits_types_rateLimitTypes from "../rateLimits/types/rateLimitTypes.js";
 import type * as search_queries_fetchSearchSuggestions from "../search/queries/fetchSearchSuggestions.js";
+import type * as storage_getUploadByKey from "../storage/getUploadByKey.js";
 import type * as storage_r2 from "../storage/r2.js";
+import type * as tables_orders_seeds_seedOrders from "../tables/orders/seeds/seedOrders.js";
+import type * as tables_orders_validators_orderValidators from "../tables/orders/validators/orderValidators.js";
 import type * as tables_tasks_aggregates_taskFilterAggregate from "../tables/tasks/aggregates/taskFilterAggregate.js";
 import type * as tables_tasks_counters_taskTotalCounter from "../tables/tasks/counters/taskTotalCounter.js";
 import type * as tables_tasks_helpers_filterValues from "../tables/tasks/helpers/filterValues.js";
@@ -74,6 +80,7 @@ import type * as tables_tasks_validators_todoValidators from "../tables/tasks/va
 import type * as turnstile_verifyTurnstile from "../turnstile/verifyTurnstile.js";
 import type * as utils_buildFilterWhere from "../utils/buildFilterWhere.js";
 import type * as utils_cursorPagination from "../utils/cursorPagination.js";
+import type * as validators_pageValidator from "../validators/pageValidator.js";
 import type * as wrappers_fetchOptimizedQuery from "../wrappers/fetchOptimizedQuery.js";
 import type * as wrappers_fetchOptimizedSearchQuery from "../wrappers/fetchOptimizedSearchQuery.js";
 
@@ -90,6 +97,9 @@ declare const fullApi: ApiFromModules<{
   "aggregates/triggersAggregate": typeof aggregates_triggersAggregate;
   "aggregates/types/aggregateTypes": typeof aggregates_types_aggregateTypes;
   "aggregates/utils/getPrefixRangeBoundsAggregate": typeof aggregates_utils_getPrefixRangeBoundsAggregate;
+  "analytics/helpers/getDashboardStats": typeof analytics_helpers_getDashboardStats;
+  "analytics/queries/fetchDashboard": typeof analytics_queries_fetchDashboard;
+  "analytics/validators/analyticsValidators": typeof analytics_validators_analyticsValidators;
   "auditLogs/helpers/logAuditBulk": typeof auditLogs_helpers_logAuditBulk;
   "auditLogs/helpers/logAuditChange": typeof auditLogs_helpers_logAuditChange;
   "auditLogs/helpers/logAuditEvent": typeof auditLogs_helpers_logAuditEvent;
@@ -131,7 +141,10 @@ declare const fullApi: ApiFromModules<{
   "rateLimits/helpers/enforceRateLimit": typeof rateLimits_helpers_enforceRateLimit;
   "rateLimits/types/rateLimitTypes": typeof rateLimits_types_rateLimitTypes;
   "search/queries/fetchSearchSuggestions": typeof search_queries_fetchSearchSuggestions;
+  "storage/getUploadByKey": typeof storage_getUploadByKey;
   "storage/r2": typeof storage_r2;
+  "tables/orders/seeds/seedOrders": typeof tables_orders_seeds_seedOrders;
+  "tables/orders/validators/orderValidators": typeof tables_orders_validators_orderValidators;
   "tables/tasks/aggregates/taskFilterAggregate": typeof tables_tasks_aggregates_taskFilterAggregate;
   "tables/tasks/counters/taskTotalCounter": typeof tables_tasks_counters_taskTotalCounter;
   "tables/tasks/helpers/filterValues": typeof tables_tasks_helpers_filterValues;
@@ -150,6 +163,7 @@ declare const fullApi: ApiFromModules<{
   "turnstile/verifyTurnstile": typeof turnstile_verifyTurnstile;
   "utils/buildFilterWhere": typeof utils_buildFilterWhere;
   "utils/cursorPagination": typeof utils_cursorPagination;
+  "validators/pageValidator": typeof validators_pageValidator;
   "wrappers/fetchOptimizedQuery": typeof wrappers_fetchOptimizedQuery;
   "wrappers/fetchOptimizedSearchQuery": typeof wrappers_fetchOptimizedSearchQuery;
 }>;

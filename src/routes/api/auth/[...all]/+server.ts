@@ -11,7 +11,8 @@ const FORWARDED_AUTH_HEADER_NAMES = new Set([
 	'cookie',
 	'origin',
 	'referer',
-	'user-agent'
+	'user-agent',
+	'x-captcha-response'
 ]);
 
 const handler: RequestHandler = ({ request, getClientAddress }) => {

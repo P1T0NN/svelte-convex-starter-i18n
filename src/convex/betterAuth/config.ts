@@ -19,6 +19,7 @@ import authSchema from './component/schema.js';
 
 // CONFIG
 import authConfig from './auth.config.js';
+import { TURNSTILE_ALWAYS_PASS_TEST_SECRET } from '../../shared/features/captcha/config.js';
 
 // EMAILS
 import { sendVerificationOTPEmail } from './emails/sendVerificationOTPEmail.js';
@@ -27,6 +28,7 @@ import { sendVerificationOTPEmail } from './emails/sendVerificationOTPEmail.js';
 import type { DataModel } from '../_generated/dataModel.js';
 
 const siteUrl = process.env.PUBLIC_ORIGIN!;
+const turnstileSecret = process.env.TURNSTILE_SECRET_KEY!;
 
 type BannedUserRecord = {
 	id: string;
@@ -143,8 +145,8 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
 		plugins: [
 			captcha({
 				provider: 'cloudflare-turnstile',
-				secretKey: process.env.TURNSTILE_SECRET_KEY!,
-				expectedAction: 'auth',
+				secretKey: turnstileSecret,
+				expectedAction: turnstileSecret === TURNSTILE_ALWAYS_PASS_TEST_SECRET ? undefined : 'auth',
 				endpoints: [
 					'/sign-up/email',
 					'/sign-in/email',
