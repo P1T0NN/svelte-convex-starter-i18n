@@ -226,6 +226,24 @@ flags or waits on `Promise.all`.
   plus the `search_title` full-text index.
 - `storageUploads`: owner, object key, `pending`/`uploaded` status, timestamp,
   and key/created-at indexes. It tracks uploads until a mutation claims them.
+- `dailySales`: one row per UTC day and shard (`DAILY_SALES_SHARD_COUNT` shards,
+  chosen by hashing the order id) with order counts by status, paid revenue,
+  and a mergeable buyer sketch (`buyersSketch`). The `orders` trigger in
+  `aggregates/triggersAggregate.ts` keeps it current, so dashboard queries read
+  at most one row per day and shard instead of scanning orders. Backfill or
+  repair with the `ensureDailySalesRows` and `rebuildDailySales` migrations;
+  re-shard with `resetDailySales` first. The sketch hashes `orders.customerId`,
+  so keep one canonical buyer key format (see
+  [`FutureAnalyticsMetrics.md`](./FutureAnalyticsMetrics.md)).
+- `products` + `orderItems`: catalog and line items (`orderId`, `productId`,
+  `quantity`, `lineTotalCents`) with order/product indexes.
+- `dailyProductSales`: one row per UTC day, product, and shard
+  (`DAILY_SALES_SHARD_COUNT` shards, chosen by hashing the order id) with paid
+  `quantity` and `revenue`, kept current by the same `orders`/`orderItems`
+  triggers. Top products read from it (`fetchTopProducts`); when a range
+  exceeds one query's read budget, `fetchTopProductsExact` splits by day and
+  then by product-id range, so nothing caps out. Repair with the
+  `rebuildDailyProductSales` migrations.
 - Better Auth owns its component tables (`user`, `session`, `account`,
   `verification`, rate-limit/JWKS tables) under `betterAuth/component`.
 
@@ -292,8 +310,8 @@ expected client-facing failure:
 
    ```ts
    throw new ConvexError<BackendErrorData>({
-     code: 'TOO_MANY_FILES',
-     maxFiles: STORAGE_CONFIG.maxFilesPerUpload
+   	code: 'TOO_MANY_FILES',
+   	maxFiles: STORAGE_CONFIG.maxFilesPerUpload
    });
    ```
 

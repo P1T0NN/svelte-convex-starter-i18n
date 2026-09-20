@@ -7,6 +7,8 @@
 
 	// COMPONENTS
 	import AdminDashboardHeader from '@/components/pages/admin/dashboard/admin-dashboard-header/admin-dashboard-header.svelte';
+	import AdminDashboardRevenueChart from '@/components/pages/admin/dashboard/admin-dashboard-revenue-chart/admin-dashboard-revenue-chart.svelte';
+	import AdminDashboardTopProducts from '@/components/pages/admin/dashboard/admin-dashboard-top-products/admin-dashboard-top-products.svelte';
 	import AnalyticsStatsCard from '@/features/analytics/components/analytics-stats-card/analytics-stats-card.svelte';
 	import ErrorComponent from '@/components/ui/custom-components/error-component/error-component.svelte';
 	import SvelteHead from '@/components/ui/custom-components/svelte-head/svelte-head.svelte';
@@ -51,22 +53,24 @@
 		return [
 			{
 				title: m['AnalyticsFeature.AnalyticsData.revenue'](),
-				value: formatCurrency(current.revenue, locale),
+				value: current.revenue,
+				format: (value) => formatCurrency(value, locale),
 				change: getComparisonPercentage(current.revenue, previous.revenue)
 			},
 			{
 				title: m['AnalyticsFeature.AnalyticsData.orders'](),
-				value: current.orders.toLocaleString(locale),
+				value: current.orders,
 				change: getComparisonPercentage(current.orders, previous.orders)
 			},
 			{
 				title: m['AnalyticsFeature.AnalyticsData.customers'](),
-				value: current.customers.toLocaleString(locale),
+				value: current.customers,
 				change: getComparisonPercentage(current.customers, previous.customers)
 			},
 			{
 				title: m['AnalyticsFeature.AnalyticsData.averageOrderValue'](),
-				value: formatCurrency(current.averageOrderValue, locale),
+				value: current.averageOrderValue,
+				format: (value) => formatCurrency(value, locale),
 				change: getComparisonPercentage(current.averageOrderValue, previous.averageOrderValue)
 			}
 		];
@@ -93,4 +97,8 @@
 			{/each}
 		</div>
 	{/if}
+
+	<AdminDashboardRevenueChart />
+
+	<AdminDashboardTopProducts />
 </div>

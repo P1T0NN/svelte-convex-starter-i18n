@@ -21,15 +21,16 @@
 	import type { ComponentProps, Snippet } from 'svelte';
 	import type { ChartConfig } from '@/components/ui/chart/chart-utils.js';
 
-	type ChartDatum = Record<string, unknown>;
+	type ChartDatum = Record<string, string | number | Date>;
 	type DateAccessor = string | ((item: ChartDatum) => Date);
 	type LayerAreaProps = Partial<ComponentProps<typeof Area>>;
 	type LayerClipPathProps = Partial<ComponentProps<typeof ChartClipPath>>;
+	type AxisProps = Record<string, string | number | boolean | undefined>;
 	type LayerAreaChartProps = {
 		area?: LayerAreaProps;
-		xAxis?: Record<string, unknown>;
-		yAxis?: Record<string, unknown>;
-		[key: string]: unknown;
+		xAxis?: AxisProps;
+		yAxis?: AxisProps;
+		[key: string]: LayerAreaProps | AxisProps | string | number | boolean | undefined;
 	};
 	type AreaSeries = {
 		key: string;
@@ -50,11 +51,11 @@
 	function getDatumDate(item: ChartDatum | undefined, accessor: DateAccessor) {
 		if (!item) return undefined;
 
-		const value = typeof accessor === 'function' ? accessor(item) : item[accessor];
+		const value = accessor instanceof Function ? accessor(item) : item[accessor];
 		return value instanceof Date ? value : undefined;
 	}
 
-	function formatDate(value: unknown, locale: string, options: Intl.DateTimeFormatOptions) {
+	function formatDate(value: Date | string, locale: string, options: Intl.DateTimeFormatOptions) {
 		if (value instanceof Date) return value.toLocaleDateString(locale, options);
 		return String(value);
 	}
@@ -79,11 +80,12 @@
 		maxDate,
 		locale = 'en-US',
 		timeZone,
+		showTimeRange = true,
 		// Chart
 		series: seriesOverride,
 		seriesLayout = 'stack',
 		showLegend = true,
-		axis = 'x',
+		axis = true,
 		xAxisFormat,
 		yAxisFormat = () => '',
 		tooltipLabelFormatter,
@@ -96,7 +98,7 @@
 		title = 'Area Chart - Interactive',
 		description,
 		descriptionPrefix = 'Showing total visitors for',
-		cardClass,
+		cardClass = 'pt-0',
 		cardHeaderClass = 'flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row',
 		cardContentClass,
 		containerClass = '-ml-3 aspect-auto h-62.5 w-full',
@@ -119,13 +121,14 @@
 		maxDate?: Date;
 		locale?: string;
 		timeZone?: string;
+		showTimeRange?: boolean;
 		series?: AreaSeries[];
 		seriesLayout?: 'stack' | 'stackExpand';
 		showLegend?: boolean;
-		axis?: 'x' | false;
-		xAxisFormat?: (value: unknown) => string;
-		yAxisFormat?: (value?: unknown) => string;
-		tooltipLabelFormatter?: (value: unknown) => string;
+		axis?: 'x' | 'y' | boolean;
+		xAxisFormat?: (value: Date | string) => string;
+		yAxisFormat?: (value?: number) => string;
+		tooltipLabelFormatter?: (value: Date | string) => string;
 		tooltipIndicator?: 'dot' | 'line' | 'dashed';
 		tooltipNameKey?: string;
 		fillOpacity?: number;
@@ -185,6 +188,7 @@
 	const series = $derived(
 		seriesOverride ??
 			seriesKeys.map((key) => {
+				// SAFETY: ChartConfig entries carry optional label/color for rendering.
 				const cfg = config[key] as { label?: string; color?: string } | undefined;
 				return {
 					key,
@@ -195,10 +199,10 @@
 	);
 	const resolvedXAxisFormat = $derived(
 		xAxisFormat ??
-			((value: unknown) => formatDate(value, locale, { month: 'short', day: 'numeric' }))
+			((value: Date | string) => formatDate(value, locale, { month: 'short', day: 'numeric' }))
 	);
 	const resolvedTooltipLabelFormatter = $derived(
-		tooltipLabelFormatter ?? ((value: unknown) => formatDate(value, locale, { month: 'long' }))
+		tooltipLabelFormatter ?? ((value: Date | string) => formatDate(value, locale, { month: 'long' }))
 	);
 	const resolvedAreaProps = $derived({
 		curve: curveMonotoneX,
@@ -239,15 +243,17 @@
 				<Card.Description>{resolvedDescription}</Card.Description>
 			{/if}
 		</div>
-		<TimeRangeData
-			bind:value={timeRange}
-			bind:customRange
-			options={timeRangeOptions}
-			minValue={toCalendarDate(resolvedMinDate)}
-			maxValue={toCalendarDate(resolvedMaxDate)}
-			{locale}
-			{timeZone}
-		/>
+		{#if showTimeRange}
+			<TimeRangeData
+				bind:value={timeRange}
+				bind:customRange
+				options={timeRangeOptions}
+				minValue={toCalendarDate(resolvedMinDate)}
+				maxValue={toCalendarDate(resolvedMaxDate)}
+				{locale}
+				{timeZone}
+			/>
+		{/if}
 	</Card.Header>
 	<Card.Content class={cardContentClass}>
 		<Chart.Container {config} class={containerClass}>

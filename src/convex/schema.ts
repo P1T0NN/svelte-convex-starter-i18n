@@ -42,6 +42,8 @@ export const tables = {
 		.index('by_created_at', ['createdAt']),
 	orders: defineTable({
 		orderNumber: v.string(),
+		// Buyer key hashed into dailySales.buyersSketch. Use one canonical format
+		// (user_<authId> / guest_<sessionId>); mixing formats double-counts buyers.
 		customerId: v.string(),
 		status: orderStatus,
 		total: v.number(),
@@ -49,7 +51,38 @@ export const tables = {
 		placedAt: v.number()
 	})
 		.index('by_placed_at', ['placedAt'])
-		.index('by_status_placed_at', ['status', 'placedAt'])
+		.index('by_status_placed_at', ['status', 'placedAt']),
+	dailySales: defineTable({
+		day: v.number(),
+		shard: v.number(),
+		orders: v.number(),
+		paidOrders: v.number(),
+		pendingOrders: v.number(),
+		refundedOrders: v.number(),
+		cancelledOrders: v.number(),
+		revenue: v.number(),
+		buyersSketch: v.bytes()
+	}).index('by_day_shard', ['day', 'shard']),
+	products: defineTable({
+		name: v.string(),
+		sku: v.string(),
+		priceCents: v.number()
+	}).index('by_sku', ['sku']),
+	orderItems: defineTable({
+		orderId: v.id('orders'),
+		productId: v.id('products'),
+		quantity: v.number(),
+		lineTotalCents: v.number()
+	})
+		.index('by_order_id', ['orderId'])
+		.index('by_product_id', ['productId']),
+	dailyProductSales: defineTable({
+		day: v.number(),
+		productId: v.id('products'),
+		shard: v.number(),
+		quantity: v.number(),
+		revenue: v.number()
+	}).index('by_day_product_shard', ['day', 'productId', 'shard'])
 };
 
 export default defineSchema(tables);

@@ -331,6 +331,20 @@
 		"AdminDashboardHeaderCustomCalendar": {
 			"custom": "Custom",
 			"rangeTooLong": "You cannot select more than 366 days at once"
+		},
+		"RevenueChart": {
+			"title": "Revenue",
+			"descriptionPrefix": "Showing total revenue for",
+			"loadError": "Couldn't load the revenue chart."
+		},
+		"TopProducts": {
+			"title": "Top products",
+			"description": "By revenue in the selected range",
+			"loadError": "Couldn't load top products.",
+			"empty": "No product sales in this range.",
+			"product": "Product",
+			"units": "Units",
+			"unknownProduct": "Unknown product"
 		}
 	},
 	"AdminLogsPage": {

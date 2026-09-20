@@ -5,6 +5,7 @@ import { convexTest } from 'convex-test';
 
 import { api } from '../../src/convex/_generated/api';
 import schema from '../../src/convex/schema';
+import { aggregateTriggers } from '../../src/convex/aggregates/triggersAggregate';
 import { getDashboardStats } from '../../src/convex/analytics/helpers/getDashboardStats';
 
 // TYPES
@@ -22,7 +23,8 @@ const adminIdentity: Partial<UserIdentity> & { role: string } = {
 
 async function seedOrders(t: ReturnType<typeof convexTest>) {
 	await t.run(async (ctx) => {
-		await ctx.db.insert('orders', {
+		const { db } = aggregateTriggers.wrapDB(ctx);
+		await db.insert('orders', {
 			orderNumber: 'ORD-00001',
 			customerId: 'cust_4',
 			status: 'paid',
@@ -30,7 +32,7 @@ async function seedOrders(t: ReturnType<typeof convexTest>) {
 			currency: 'USD',
 			placedAt: RANGE_START - 2 * DAY_IN_MS
 		});
-		await ctx.db.insert('orders', {
+		await db.insert('orders', {
 			orderNumber: 'ORD-00002',
 			customerId: 'cust_1',
 			status: 'paid',
@@ -38,7 +40,7 @@ async function seedOrders(t: ReturnType<typeof convexTest>) {
 			currency: 'USD',
 			placedAt: RANGE_START
 		});
-		await ctx.db.insert('orders', {
+		await db.insert('orders', {
 			orderNumber: 'ORD-00003',
 			customerId: 'cust_1',
 			status: 'paid',
@@ -46,7 +48,7 @@ async function seedOrders(t: ReturnType<typeof convexTest>) {
 			currency: 'USD',
 			placedAt: RANGE_START + 2 * DAY_IN_MS
 		});
-		await ctx.db.insert('orders', {
+		await db.insert('orders', {
 			orderNumber: 'ORD-00004',
 			customerId: 'cust_2',
 			status: 'refunded',
@@ -54,7 +56,7 @@ async function seedOrders(t: ReturnType<typeof convexTest>) {
 			currency: 'USD',
 			placedAt: RANGE_START + 3 * DAY_IN_MS
 		});
-		await ctx.db.insert('orders', {
+		await db.insert('orders', {
 			orderNumber: 'ORD-00005',
 			customerId: 'cust_3',
 			status: 'paid',
@@ -136,7 +138,8 @@ test('compares partial ranges against full previous days', async () => {
 	const t = convexTest(schema, modules);
 	await seedOrders(t);
 	await t.run(async (ctx) => {
-		await ctx.db.insert('orders', {
+		const { db } = aggregateTriggers.wrapDB(ctx);
+		await db.insert('orders', {
 			orderNumber: 'ORD-00006',
 			customerId: 'cust_5',
 			status: 'paid',
@@ -187,5 +190,51 @@ test('returns an empty previous window when the range has no prior data', async 
 		orders: 0,
 		customers: 0,
 		averageOrderValue: 0
+	});
+});
+
+test('returns a zero-filled daily revenue series for the range', async () => {
+	const t = convexTest(schema, modules);
+	await seedOrders(t);
+
+	const admin = t.withIdentity(adminIdentity);
+	const series = await admin.query(api.analytics.queries.fetchRevenueSeries.fetchRevenueSeries, {
+		from: RANGE_START,
+		to: RANGE_START + 3 * DAY_IN_MS
+	});
+
+	expect(series).toEqual([
+		{ date: RANGE_START, revenue: 1000 },
+		{ date: RANGE_START + DAY_IN_MS, revenue: 0 },
+		{ date: RANGE_START + 2 * DAY_IN_MS, revenue: 2000 },
+		{ date: RANGE_START + 3 * DAY_IN_MS, revenue: 0 }
+	]);
+});
+
+test('keeps the daily rollup in sync when an order is deleted', async () => {
+	const t = convexTest(schema, modules);
+	await seedOrders(t);
+
+	await t.run(async (ctx) => {
+		const { db } = aggregateTriggers.wrapDB(ctx);
+		const order = await db
+			.query('orders')
+			.withIndex('by_placed_at', (q) => q.eq('placedAt', RANGE_START))
+			.unique();
+		if (order) await db.delete(order._id);
+	});
+
+	const stats = await t.run((ctx) =>
+		getDashboardStats(ctx, {
+			from: RANGE_START,
+			to: RANGE_START + 3 * DAY_IN_MS
+		})
+	);
+
+	expect(stats).toEqual({
+		revenue: 2000,
+		orders: 2,
+		customers: 2,
+		averageOrderValue: 2000
 	});
 });

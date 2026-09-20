@@ -5,6 +5,7 @@ import { v } from 'convex/values';
 import { adminQuery } from '../../builders/convexFunctionBuilders.js';
 
 // HELPERS
+import { assertDateRange } from '../helpers/assertDateRange.js';
 import { getDashboardStats } from '../helpers/getDashboardStats.js';
 
 // VALIDATORS
@@ -13,12 +14,6 @@ import { dashboardComparison } from '../validators/analyticsValidators.js';
 // TYPES
 import type { DashboardComparison } from '../../../shared/features/analytics/types/analyticsTypes.js';
 
-function assertRange(range: { from: number; to: number }): void {
-	if (!Number.isFinite(range.from) || !Number.isFinite(range.to) || range.from > range.to) {
-		throw new Error('Invalid dashboard date range');
-	}
-}
-
 export const fetchDashboard = adminQuery({
 	args: {
 		current: v.object({ from: v.number(), to: v.number() }),
@@ -26,8 +21,8 @@ export const fetchDashboard = adminQuery({
 	},
 	returns: dashboardComparison,
 	handler: async (ctx, args): Promise<DashboardComparison> => {
-		assertRange(args.current);
-		assertRange(args.previous);
+		assertDateRange(args.current);
+		assertDateRange(args.previous);
 
 		const [current, previous] = await Promise.all([
 			getDashboardStats(ctx, args.current),

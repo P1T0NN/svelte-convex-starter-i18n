@@ -118,7 +118,7 @@
 		if (!bounds) return data;
 
 		return data.filter((item) => {
-			const date = typeof dateAccessor === 'function' ? dateAccessor(item) : item[dateAccessor];
+			const date = dateAccessor instanceof Function ? dateAccessor(item) : item[dateAccessor];
 			if (!(date instanceof Date)) return false;
 			return date >= bounds.start && date <= bounds.end;
 		});
@@ -137,17 +137,17 @@
 </script>
 
 <script lang="ts">
+	// SVELTEKIT IMPORTS
+	import { tick } from 'svelte';
+
 	// COMPONENTS
-	import { NativeSelect } from '@/components/ui/select/index.js';
-	import * as Popover from '@/components/ui/popover/index.js';
-	import { Button } from '@/components/ui/button/index.js';
+	import { buttonVariants } from '@/components/ui/button/index.js';
+	import NativePopover from '@/components/ui/native-components/native-popover/native-popover.svelte';
+	import NativeSelect from '@/components/ui/native-components/native-select/native-select.svelte';
 	import RangeCalendar from '@/components/ui/range-calendar/range-calendar.svelte';
 
 	// UTILS
 	import { cn } from '@/utils/utils.js';
-
-	// LUCIDE ICONS
-	
 
 	let {
 		value = $bindable<TimeRangeValue>('90d'),
@@ -191,7 +191,8 @@
 		calendarClass?: string;
 	} = $props();
 
-	let calendarOpen = $state(false);
+	const uid = $props.id();
+	const popoverId = `chart-time-range-${uid}`;
 
 	const isCustom = $derived(value === 'custom');
 	const customRangeLabel = $derived(formatDateRange(customRange, locale, undefined, timeZone));
@@ -201,53 +202,57 @@
 		{ value: 'custom', label: customLabel }
 	]);
 
-	function handleValueChange(nextValue: string) {
-		if (nextValue === 'custom') {
-			calendarOpen = true;
-		}
+	async function openCalendar(): Promise<void> {
+		await tick();
+		const popover = document.getElementById(popoverId);
+		if (popover && !popover.matches(':popover-open')) popover.showPopover();
+	}
+
+	function handleValueChange(nextValue: string): void {
+		if (nextValue === 'custom') void openCalendar();
 	}
 </script>
+
+{#snippet calendarTrigger()}
+	<span class="icon-[lucide--calendar] size-4"></span>
+	<span>{customRangeLabel}</span>
+{/snippet}
 
 <div class={cn('flex flex-wrap items-center justify-end gap-2', className)}>
 	<NativeSelect
 		class={selectTriggerClass}
-		ariaLabel={selectAriaLabel}
+		label={selectAriaLabel}
 		{value}
-		onChange={(v) => {
-			value = v as TimeRangeValue;
-			handleValueChange(v);
+		onchange={(nextValue) => {
+			value = nextValue as TimeRangeValue;
+			handleValueChange(nextValue);
 		}}
 		options={selectOptions}
 	/>
 
 	{#if isCustom}
-		<Popover.Root bind:open={calendarOpen}>
-			<Popover.Trigger>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="outline"
-						class={cn('min-w-44 justify-start rounded-lg font-normal', calendarButtonClass)}
-						aria-label={calendarAriaLabel}
-					>
-						<span class="icon-[lucide--calendar] size-4"></span>
-						<span>{customRangeLabel}</span>
-					</Button>
-				{/snippet}
-			</Popover.Trigger>
-			<Popover.Content align="end" class={popoverContentClass}>
-				<RangeCalendar
-					bind:value={customRange}
-					bind:placeholder
-					{locale}
-					{minValue}
-					{maxValue}
-					{numberOfMonths}
-					{captionLayout}
-					{fixedWeeks}
-					class={calendarClass}
-				/>
-			</Popover.Content>
-		</Popover.Root>
+		<NativePopover
+			id={popoverId}
+			trigger={calendarTrigger}
+			triggerLabel={calendarAriaLabel}
+			triggerClass={cn(
+				buttonVariants({ variant: 'outline', size: 'sm' }),
+				'min-w-44 justify-start gap-2 rounded-lg font-normal',
+				calendarButtonClass
+			)}
+			class={popoverContentClass}
+		>
+			<RangeCalendar
+				bind:value={customRange}
+				bind:placeholder
+				{locale}
+				{minValue}
+				{maxValue}
+				{numberOfMonths}
+				{captionLayout}
+				{fixedWeeks}
+				class={calendarClass}
+			/>
+		</NativePopover>
 	{/if}
 </div>
