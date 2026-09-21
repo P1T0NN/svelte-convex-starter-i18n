@@ -4,6 +4,9 @@ import { onMount } from 'svelte';
 // HOOKS
 import { useSearchParams } from '@/hooks/useSearchParams.svelte';
 
+// UTILS
+import { sortBy } from '@/shared/lib/algorithms/index.js';
+
 // TYPES
 import type {
 	ActiveFilters,
@@ -78,8 +81,11 @@ export function useFilters(options: FiltersOptions): FiltersApi {
 	// Canonical, order-independent serialization — sorted keys so `{status,price}`
 	// and `{price,status}` produce the same reset/cache key.
 	const identity = $derived(
-		Object.entries(active)
-			.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+		sortBy(
+			Object.entries(active),
+			([key]) => key,
+			(a, b) => (a < b ? -1 : a > b ? 1 : 0)
+		)
 			.map(([key, value]) => `${key}=${value}`)
 			.join('\u0000')
 	);

@@ -1,3 +1,6 @@
+// UTILS
+import { indexBy } from '../../../lib/algorithms/index.js';
+
 // TYPES
 import type {
 	ConvexFilter,
@@ -23,8 +26,10 @@ export function eqMap<T extends ConvexFilterScalar>(
 }
 
 export function numberBuckets(field: string, buckets: readonly NumberBucket[]): FilterPredicate {
+	const bucketsByValue = indexBy(buckets, (bucket) => bucket.value);
+
 	return (value) => {
-		const bucket = buckets.find((candidate) => candidate.value === value);
+		const bucket = bucketsByValue.get(value);
 		if (!bucket) return undefined;
 		return { field, gte: bucket.min, lt: bucket.max } satisfies ConvexFilter;
 	};
@@ -34,8 +39,10 @@ export function numberBuckets(field: string, buckets: readonly NumberBucket[]): 
 export type DateBucket = { value: string; from: () => number };
 
 export function dateBuckets(field: string, buckets: readonly DateBucket[]): FilterPredicate {
+	const bucketsByValue = indexBy(buckets, (bucket) => bucket.value);
+
 	return (value) => {
-		const bucket = buckets.find((candidate) => candidate.value === value);
+		const bucket = bucketsByValue.get(value);
 		return bucket ? { field, gte: bucket.from() } : undefined;
 	};
 }

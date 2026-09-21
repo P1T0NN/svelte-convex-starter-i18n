@@ -4,7 +4,6 @@ import { v } from 'convex/values';
 export const dashboardStats = v.object({
 	revenue: v.number(),
 	orders: v.number(),
-	customers: v.number(),
 	averageOrderValue: v.number()
 });
 
@@ -19,17 +18,3 @@ export const revenueSeriesPoint = v.object({
 });
 
 export const revenueSeries = v.array(revenueSeriesPoint);
-
-export const topProduct = v.object({
-	productId: v.id('products'),
-	name: v.string(),
-	revenue: v.number(),
-	quantity: v.number()
-});
-
-export const topProducts = v.array(topProduct);
-
-export const topProductsResult = v.object({
-	exact: v.boolean(),
-	products: topProducts
-});

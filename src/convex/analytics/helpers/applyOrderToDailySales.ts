@@ -1,10 +1,4 @@
 // HELPERS
-import {
-	addBuyerToSketch,
-	createBuyerSketch,
-	fromStoredBuyerSketch,
-	toStoredBuyerSketch
-} from './buyerSketch.js';
 import { toUtcDay } from './dailySalesRange.js';
 import { shardForOrder } from './dailySalesShards.js';
 
@@ -18,8 +12,7 @@ function isSameDailySalesInput(previous: Order, next: Order): boolean {
 	return (
 		previous.placedAt === next.placedAt &&
 		previous.status === next.status &&
-		previous.total === next.total &&
-		previous.customerId === next.customerId
+		previous.total === next.total
 	);
 }
 
@@ -34,9 +27,6 @@ async function addOrderToDay(ctx: MutationCtx, order: Order): Promise<void> {
 	const day = toUtcDay(order.placedAt);
 	const shard = shardForOrder(order._id);
 	const row = await findDayRow(ctx, day, shard);
-	const sketch = row ? fromStoredBuyerSketch(row.buyersSketch) : createBuyerSketch();
-	addBuyerToSketch(sketch, order.customerId);
-
 	const paid = order.status === 'paid';
 	const changes = {
 		orders: (row?.orders ?? 0) + 1,
@@ -44,8 +34,7 @@ async function addOrderToDay(ctx: MutationCtx, order: Order): Promise<void> {
 		pendingOrders: (row?.pendingOrders ?? 0) + (order.status === 'pending' ? 1 : 0),
 		refundedOrders: (row?.refundedOrders ?? 0) + (order.status === 'refunded' ? 1 : 0),
 		cancelledOrders: (row?.cancelledOrders ?? 0) + (order.status === 'cancelled' ? 1 : 0),
-		revenue: (row?.revenue ?? 0) + (paid ? order.total : 0),
-		buyersSketch: toStoredBuyerSketch(sketch)
+		revenue: (row?.revenue ?? 0) + (paid ? order.total : 0)
 	};
 
 	if (row) {

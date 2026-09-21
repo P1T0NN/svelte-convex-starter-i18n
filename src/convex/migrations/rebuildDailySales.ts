@@ -1,9 +1,4 @@
 // HELPERS
-import {
-	addBuyerToSketch,
-	createBuyerSketch,
-	toStoredBuyerSketch
-} from '../analytics/helpers/buyerSketch.js';
 import { DAY_IN_MS, toUtcDay } from '../analytics/helpers/dailySalesRange.js';
 import { shardForOrder } from '../analytics/helpers/dailySalesShards.js';
 
@@ -36,8 +31,7 @@ export const ensureDailySalesRows = migrations.define({
 			pendingOrders: 0,
 			refundedOrders: 0,
 			cancelledOrders: 0,
-			revenue: 0,
-			buyersSketch: toStoredBuyerSketch(createBuyerSketch())
+			revenue: 0
 		});
 	}
 });
@@ -52,7 +46,6 @@ export const rebuildDailySales = migrations.define({
 			)
 			.collect();
 
-		const sketch = createBuyerSketch();
 		let ordersInShard = 0;
 		let revenue = 0;
 		let paidOrders = 0;
@@ -64,7 +57,6 @@ export const rebuildDailySales = migrations.define({
 			if (shardForOrder(order._id) !== row.shard) continue;
 
 			ordersInShard += 1;
-			addBuyerToSketch(sketch, order.customerId);
 
 			if (order.status === 'paid') {
 				revenue += order.total;
@@ -84,8 +76,7 @@ export const rebuildDailySales = migrations.define({
 			pendingOrders,
 			refundedOrders,
 			cancelledOrders,
-			revenue,
-			buyersSketch: toStoredBuyerSketch(sketch)
+			revenue
 		};
 	}
 });

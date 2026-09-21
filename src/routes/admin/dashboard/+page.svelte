@@ -8,7 +8,6 @@
 	// COMPONENTS
 	import AdminDashboardHeader from '@/components/pages/admin/dashboard/admin-dashboard-header/admin-dashboard-header.svelte';
 	import AdminDashboardRevenueChart from '@/components/pages/admin/dashboard/admin-dashboard-revenue-chart/admin-dashboard-revenue-chart.svelte';
-	import AdminDashboardTopProducts from '@/components/pages/admin/dashboard/admin-dashboard-top-products/admin-dashboard-top-products.svelte';
 	import AnalyticsStatsCard from '@/features/analytics/components/analytics-stats-card/analytics-stats-card.svelte';
 	import ErrorComponent from '@/components/ui/custom-components/error-component/error-component.svelte';
 	import SvelteHead from '@/components/ui/custom-components/svelte-head/svelte-head.svelte';
@@ -24,7 +23,7 @@
 	// TYPES
 	import type { AnalyticsStat } from '@/shared/features/analytics/types/analyticsTypes.js';
 
-	const STAT_SKELETONS = [0, 1, 2, 3];
+	const STAT_SKELETONS = [0, 1, 2];
 
 	const analytics = createAnalyticsDashboard();
 
@@ -63,11 +62,6 @@
 				change: getComparisonPercentage(current.orders, previous.orders)
 			},
 			{
-				title: m['AnalyticsFeature.AnalyticsData.customers'](),
-				value: current.customers,
-				change: getComparisonPercentage(current.customers, previous.customers)
-			},
-			{
 				title: m['AnalyticsFeature.AnalyticsData.averageOrderValue'](),
 				value: current.averageOrderValue,
 				format: (value) => formatCurrency(value, locale),
@@ -85,13 +79,13 @@
 	{#if dashboard.error}
 		<ErrorComponent message={m['AdminDashboardPage.statsLoadError']()} />
 	{:else if stats.length > 0}
-		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each stats as stat (stat.title)}
 				<AnalyticsStatsCard {...stat} />
 			{/each}
 		</div>
 	{:else}
-		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each STAT_SKELETONS as skeleton (skeleton)}
 				<Skeleton class="h-40 rounded-4xl" />
 			{/each}
@@ -99,6 +93,4 @@
 	{/if}
 
 	<AdminDashboardRevenueChart />
-
-	<AdminDashboardTopProducts />
 </div>

@@ -10,6 +10,9 @@ import { authenticatedMutation } from '../../../builders/convexFunctionBuilders.
 import { logAuditBulk } from '../../../auditLogs/helpers/logAuditBulk.js';
 import { getOwnerId } from '../../../betterAuth/helpers/requireIdentity.js';
 
+// UTILS
+import { uniqueBy } from '../../../../shared/lib/algorithms/index.js';
+
 // TYPES
 import type { AuditEvent } from '../../../auditLogs/types/auditLogsTypes.js';
 import type { BackendErrorData } from '../../../../shared/types/types.js';
@@ -25,7 +28,7 @@ export const deleteTodo = authenticatedMutation({
 
 		let deleted = 0;
 		const auditEvents: AuditEvent[] = [];
-		for (const id of new Set(args.ids)) {
+		for (const id of uniqueBy(args.ids, (id) => id)) {
 			const task = await ctx.db.get(id);
 			if (!task || task.ownerId !== getOwnerId(ctx.identity)) continue;
 

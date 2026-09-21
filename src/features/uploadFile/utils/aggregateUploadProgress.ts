@@ -1,8 +1,12 @@
+// UTILS
+import { sumBy } from '../../../shared/lib/algorithms/index.js';
+
+// TYPES
 import type { FileUploadProgress } from '../types/uploadFileTypes.js';
 
 export function aggregateUploadProgress(files: FileUploadProgress[]): number {
-	const total = files.reduce((sum, file) => sum + file.total, 0);
+	const total = sumBy(files, (file) => file.total);
 	if (total === 0) return 0;
-	const loaded = files.reduce((sum, file) => sum + Math.min(file.loaded, file.total), 0);
+	const loaded = sumBy(files, (file) => Math.min(file.loaded, file.total));
 	return Math.round((loaded / total) * 100);
 }

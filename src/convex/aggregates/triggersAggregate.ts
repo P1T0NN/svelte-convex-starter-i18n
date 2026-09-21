@@ -7,10 +7,6 @@ import { taskFilterAggregate } from '../tables/tasks/aggregates/taskFilterAggreg
 
 // HELPERS
 import { applyOrderChangeToDailySales } from '../analytics/helpers/applyOrderToDailySales.js';
-import {
-	applyOrderChangeToProductSales,
-	applyOrderItemChangeToProductSales
-} from '../analytics/helpers/applyOrderToProductSales.js';
 
 // TYPES
 import type { DataModel } from '../_generated/dataModel.js';
@@ -30,11 +26,6 @@ aggregateTriggers.register('tasks', async (ctx, change) => {
 
 aggregateTriggers.register('orders', async (ctx, change) => {
 	await applyOrderChangeToDailySales(ctx, change.oldDoc, change.newDoc);
-	await applyOrderChangeToProductSales(ctx, change.oldDoc, change.newDoc);
-});
-
-aggregateTriggers.register('orderItems', async (ctx, change) => {
-	await applyOrderItemChangeToProductSales(ctx, change.oldDoc, change.newDoc);
 });
 
 export { aggregateTriggers };

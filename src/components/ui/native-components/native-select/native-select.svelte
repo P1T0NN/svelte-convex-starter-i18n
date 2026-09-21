@@ -14,6 +14,7 @@
 	// UTILS
 	import { cn } from '@/utils/utils.js';
 	import { m } from '@/lib/paraglide/messages';
+	import { linearFind } from '@/shared/lib/algorithms/index.js';
 
 	type Option = { value: string; label: string };
 
@@ -44,7 +45,7 @@
 	});
 
 	const selectedLabel = $derived(
-		options.find((option) => option.value === value)?.label ?? placeholder
+		linearFind(options, (option) => option.value === value)?.label ?? placeholder
 	);
 	const displayOptions = $derived(
 		!includePlaceholderOption || options.some((option) => option.value === '')

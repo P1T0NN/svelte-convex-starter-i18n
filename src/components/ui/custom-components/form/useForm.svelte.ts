@@ -9,6 +9,7 @@ import { m } from '@/lib/paraglide/messages';
 import { optimizeToWebp } from '@/features/storage/utils/optimizeToWebp.js';
 import { aggregateUploadProgress } from '@/features/uploadFile/utils/aggregateUploadProgress.js';
 import { uploadWithProgress } from '@/features/uploadFile/utils/uploadWithProgress.js';
+import { linearFind } from '@/shared/lib/algorithms/index.js';
 import { STORAGE_CONFIG } from '@/shared/features/storage/config.js';
 import { toastMessage } from '@/utils/toastMessage.js';
 
@@ -186,8 +187,8 @@ export function useForm<Mutation extends FunctionReference<'mutation' | 'action'
 			)
 		);
 		const keys = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
-		const failed = results.find((result) => result.status === 'rejected');
-		if (failed) {
+		const failed = linearFind(results, (result) => result.status === 'rejected');
+		if (failed?.status === 'rejected') {
 			await removeUploads(keys);
 			throw failed.reason;
 		}

@@ -6,6 +6,9 @@ import {
 	type DateValue
 } from '@internationalized/date';
 
+// UTILS
+import { linearFind } from '../lib/algorithms/index.js';
+
 export const DAY_IN_MS = 86_400_000;
 
 const relativeTimeUnits = [
@@ -64,7 +67,7 @@ export function formatRelativeTime(timestamp: number, locale: string, now = Date
 	const difference = timestamp - now;
 	const absoluteDifference = Math.abs(difference);
 	const [unit, milliseconds] =
-		relativeTimeUnits.find(([, duration]) => absoluteDifference >= duration) ??
+		linearFind(relativeTimeUnits, ([, duration]) => absoluteDifference >= duration) ??
 		relativeTimeUnits.at(-1)!;
 
 	return new Intl.RelativeTimeFormat(locale, {

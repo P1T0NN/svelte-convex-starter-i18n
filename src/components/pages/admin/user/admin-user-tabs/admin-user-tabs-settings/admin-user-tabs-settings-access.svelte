@@ -12,6 +12,7 @@
 	import { getLocale } from '@/lib/paraglide/runtime';
 
 	// UTILS
+	import { linearFind } from '@/shared/lib/algorithms/index.js';
 	import { formatDateTime } from '@/shared/utils/date';
 
 	// TYPES
@@ -39,7 +40,7 @@
 	// kind of "select and forget" mistake worth flagging in an admin panel.
 	const hasPendingRoleChange = $derived(selectedRole !== currentRole);
 	const selectedRoleLabel = $derived(
-		roleOptions.find((option) => option.value === selectedRole)?.label ?? selectedRole
+		linearFind(roleOptions, (option) => option.value === selectedRole)?.label ?? selectedRole
 	);
 </script>
 

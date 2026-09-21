@@ -11,6 +11,9 @@ import { updateTodoSchema } from '../../../../shared/features/todo/schemas/todoS
 // CONFIG
 import { STORAGE_CONFIG } from '../../../../shared/features/storage/config.js';
 
+// UTILS
+import { countDistinctBy, differenceBy } from '../../../../shared/lib/algorithms/index.js';
+
 // AUDIT LOGS
 import { logAuditChange } from '../../../auditLogs/helpers/logAuditChange.js';
 
@@ -46,10 +49,16 @@ export const updateTodo = authenticatedUploadMutation({
 
 		const existingKeys = task.imageKeys ?? task.images;
 		const retainedKeys = args.retainedFiles ?? existingKeys;
-		if (retainedKeys.some((key) => !existingKeys.includes(key))) {
+		const hasInvalidRetainedImage = differenceBy(retainedKeys, existingKeys, (key) => key, (key) => key).length > 0;
+
+		if (hasInvalidRetainedImage) {
 			throw new ConvexError<BackendErrorData>({ code: 'INVALID_RETAINED_IMAGE' });
 		}
-		if (new Set(retainedKeys).size !== retainedKeys.length) {
+
+		const hasDuplicateRetainedImage =
+			countDistinctBy(retainedKeys, (key) => key) !== retainedKeys.length;
+
+		if (hasDuplicateRetainedImage) {
 			throw new ConvexError<BackendErrorData>({ code: 'DUPLICATE_RETAINED_IMAGE' });
 		}
 		const imageKeys = [...retainedKeys, ...(args.uploadedFiles ?? [])];
@@ -61,7 +70,12 @@ export const updateTodo = authenticatedUploadMutation({
 		}
 		await deleteStoredFiles(
 			ctx,
-			existingKeys.filter((key) => !retainedKeys.includes(key))
+			differenceBy(
+				existingKeys,
+				retainedKeys,
+				(key) => key,
+				(key) => key
+			)
 		);
 		const images = await resolveStoredFileUrls(imageKeys);
 		const taskPatch: Partial<WithoutSystemFields<Doc<'tasks'>>> = {

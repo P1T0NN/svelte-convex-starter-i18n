@@ -11,7 +11,6 @@ export type AnalyticsStat = {
 export type DashboardStats = {
 	revenue: number;
 	orders: number;
-	customers: number;
 	averageOrderValue: number;
 };
 
@@ -23,16 +22,4 @@ export type DashboardComparison = {
 export type RevenuePoint = {
 	date: number;
 	revenue: number;
-};
-
-export type TopProduct = {
-	productId: string;
-	name: string;
-	revenue: number;
-	quantity: number;
-};
-
-export type TopProductsResult = {
-	exact: boolean;
-	products: TopProduct[];
 };

@@ -2,6 +2,9 @@
 	// LIBRARIES
 	import { CalendarDate, getLocalTimeZone, type DateValue } from '@internationalized/date';
 
+	// UTILS
+	import { linearFind } from '@/shared/lib/algorithms/index.js';
+
 	// TYPES
 	import type { DateRange } from 'bits-ui';
 
@@ -69,7 +72,7 @@
 	}
 
 	export function getPresetDays(value: TimeRangeValue, options = DEFAULT_TIME_RANGE_OPTIONS) {
-		const preset = options.find((option) => option.value === value);
+		const preset = linearFind(options, (option) => option.value === value);
 		if (preset?.days !== undefined) return preset.days;
 		const match = /^(\d+)d$/.exec(value);
 		return match ? Number(match[1]) : undefined;
@@ -132,7 +135,7 @@
 		timeZone = getLocalTimeZone()
 	) {
 		if (value === 'custom') return formatDateRange(customRange, locale, undefined, timeZone);
-		return options.find((option) => option.value === value)?.label ?? 'Select range';
+		return linearFind(options, (option) => option.value === value)?.label ?? 'Select range';
 	}
 </script>
 

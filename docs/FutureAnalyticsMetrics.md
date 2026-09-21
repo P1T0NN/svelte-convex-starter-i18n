@@ -34,42 +34,19 @@ the shard count, run `resetDailySales` first, then the two above.
   `customerId`, `firstOrderDay`, `lastOrderDay`, `orderCount`,
   `lifetimeRevenue`), fill it from the same `orders` trigger, and count rows by
   `firstOrderDay` — exact and cheap with an `@convex-dev/aggregate` namespace.
-- **Distinct buyers over a range**: already supported — `dailySales.buyersSketch`
-  stores a mergeable HyperLogLog sketch per day; the query merges the range's
-  sketches and estimates. Add a second sketch column for any other unique
-  metric (unique visitors, unique carts) the same way.
 - **Average order value**: derived at read time (`revenue / paidOrders`), never
   stored.
-- **Top products by revenue**: `dailyProductSales` holds paid quantity/revenue
-  per `(day, productId, shard)`, maintained by the `orders`/`orderItems`
-  triggers; sharding by order id keeps a hot product's writes from serializing.
-  `fetchTopProducts` ranks the selected range in one query; when the range
-  holds more rows than one query may read, `fetchTopProductsExact` (a paginated
-  action) splits by day and then by product-id range — exact, no caps. Cost
-  scales with distinct products sold in the range, never with order count.
 - **Multi-currency**: either add a `revenueByCurrency` record column to
   `dailySales`, or key rows by `(day, currency)` and sum per currency.
-
-## Buyer identity (`orders.customerId`)
-
-`orders.customerId` is the buyer key hashed into `buyersSketch`, and the
-analytics layer treats it as an opaque string. There is no order-creating
-mutation in the repo yet — the seed writes `cust_1`…`cust_180`, and in a real
-shop the checkout mutation (or webhook/import) decides what goes in that field.
-One rule matters: **the same human must always produce the same string**. If one
-order stores a Better Auth id (`identity.subject`) and another stores `cust_1`
-for the same person, they count as two buyers. Pick one canonical key — for
-example `user_<authId>` when signed in and `guest_<stableSessionId>` otherwise —
-and never mix formats. Changing the format later needs no analytics code change,
-but rebuild history with `rebuildDailySales`.
 
 ## Rules of thumb
 
 - Store additive facts per day; derive ratios and averages at read time.
 - Exact sums/counts: plain number columns.
-- Distinct/unique counts: sketches (mergeable, ~1–2% error) or a per-entity
-  table counted through an aggregate (exact, but only for definitions like
-  "new" or "returning").
+- Distinct/unique counts: add a per-entity table counted through an
+  `@convex-dev/aggregate` (exact for one-bucket definitions like "new" or
+  "returning"); arbitrary distinct-over-a-range counts otherwise need sketches
+  or a raw-row scan.
 - Never make dashboard queries scan `orders`; keep `orders` for paginated
   drill-down lists only.
 - Prefer the tools that already exist before adding columns:
@@ -88,5 +65,3 @@ but rebuild history with `rebuildDailySales`.
   `DAILY_SALES_SHARD_COUNT` shards (`day` + `shard`, chosen by hashing the order
   id), so concurrent orders land on different rows and the trigger scales with
   order volume.
-- Buyer sketches cannot subtract, so deleting orders leaves a small overcount
-  until `rebuildDailySales` runs.

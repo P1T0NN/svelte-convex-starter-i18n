@@ -6,7 +6,6 @@
 		"AnalyticsData": {
 			"revenue": "Revenue",
 			"orders": "Orders",
-			"customers": "Customers",
 			"averageOrderValue": "Avg. order value"
 		},
 		"AnalyticsStatsCard": {
@@ -336,15 +335,6 @@
 			"title": "Revenue",
 			"descriptionPrefix": "Showing total revenue for",
 			"loadError": "Couldn't load the revenue chart."
-		},
-		"TopProducts": {
-			"title": "Top products",
-			"description": "By revenue in the selected range",
-			"loadError": "Couldn't load top products.",
-			"empty": "No product sales in this range.",
-			"product": "Product",
-			"units": "Units",
-			"unknownProduct": "Unknown product"
 		}
 	},
 	"AdminLogsPage": {
@@ -459,10 +449,6 @@
 		}
 	},
 	"ValidationMessages": {
-		"fallback": "Please check this field.",
-		"requiredValue": "Please enter a value.",
-		"requiredField": "Please fill this in.",
-		"validValue": "Please enter a valid value.",
 		"passwordsDoNotMatch": "Passwords do not match.",
 		"invalidEmail": "Please enter a valid email address.",
 		"passwordTooShort": "Password must be at least 8 characters long.",

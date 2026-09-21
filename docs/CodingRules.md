@@ -23,13 +23,21 @@ notes are [`DataTableSearchSystemDesign.md`](./DataTableSearchSystemDesign.md),
 Do not make a new abstraction for one caller. Promote it only after the same
 mechanics are needed in a second feature.
 
+Name non-obvious boolean expressions before branching. Collection work,
+encoded checks such as duplicate detection, and multi-clause business rules
+belong in a descriptive `const` used by the `if`; keep direct guards when the
+condition is already self-explanatory, such as `if (!task)` or
+`if (items.length === 0)`. For example, write
+`const hasDuplicateKeys = countDistinctBy(keys, (key) => key) !== keys.length;`
+and then `if (hasDuplicateKeys)`, not the expression inline in the `if`.
+
 ## Project shape and request flow
 
 - `src/routes` owns URL structure, layouts, page composition, and server load.
   The root `+layout.server.ts` supplies `authState` and `currentUser`; the
   `(protected)` and `/admin` server layouts redirect before rendering.
 - `src/features` owns a vertical capability (auth, search, filters,
-  pagination, uploads, validations, todos). Put feature-specific text,
+  pagination, uploads, todos). Put feature-specific text,
   defaults, schemas, and types there.
 - `src/components/ui` is the reusable design-system layer. `custom-components`
   compose primitives; `native-components` prefer platform APIs and lazy-load a
@@ -89,8 +97,8 @@ For `DataList` and `DataTable` headers:
   expects plain data (the form-change hook does this). Do not export a directly
   reassigned `$state` binding from a module; expose an object or functions.
 - Type `$props()` and use snippets for composition. Prefer `{@render}` over
-  legacy slots. Use `{#key}` only when a child must be recreated (the edit-todo
-  form is keyed by task id).
+  legacy slots. Use `{#key}` only when a child must be recreated with fresh
+  local state (the edit-todo form is keyed by task id).
 - DOM/global APIs belong behind `onMount`, event handlers, or `{@attach}`. Keep
   SSR-safe code free of `window`, `document`, `navigator`, and object URLs.
 
@@ -182,13 +190,20 @@ imported directly.
 | Pagination   | `useConvexPagination` owns page/cursor sessions; `useConvexInfinitePagination` owns accumulated pages, duplicate protection, retry, and reset. `createConvexPaginationQuery` is their shared subscription builder.                                       |
 | Uploads      | `UploadFile`, `UploadFileDropzone`, `UploadFilePreviewItem`, and `useUpload` manage previews, object-URL cleanup, multiple-file ordering, cover selection, and removal. `optimizeToWebp` is the browser compression step.                                |
 | Todo example | `todoEditFields` is the reusable `Form` field config; `EditTodoButton` binds an edit form and preserves existing image keys.                                                                                                                             |
-| Validation   | `validationsData` and `toHumanMessage` map validator text to safe UI copy.                                                                                                                                                                               |
 
 The admin page components are intentionally page-specific: user list/header
 rows, user profile/settings/sessions/logs tabs, ban/unban/role actions, and
 their loading skeletons. Reuse the generic `DataList`, `DataTable`, `Card`,
 `Badge`, `NativeDialog`, `NativeSelect`, and query hooks inside new admin
 screens instead of copying those page components.
+
+Operation input schemas use the exact function name plus `Schema`, such as
+`createTodoSchema` and `updateTodoSchema`. Reusable data schemas keep
+descriptive names such as `backendErrorDataSchema`.
+
+Leave built-in Zod validation messages at their defaults. Custom refinements
+must emit stable uppercase codes, never hardcoded user-facing text. Keep
+translation imports out of shared schemas.
 
 ## Shared hooks, state, and utilities
 
@@ -217,6 +232,120 @@ Convex query. Convex subscriptions are independent: three `useQuery` calls may
 render as each resolves unless the page deliberately combines their loading
 flags or waits on `Promise.all`.
 
+## Algorithms, complexity, and database lookup rules
+
+Big-O describes how an operation scales; it is **not** an API or algorithm name.
+Do not create helpers named `O(n)`, `O(logN)`, or similar. Choose the concrete
+operation/data structure first, then use its complexity to judge whether it is
+appropriate. Reuse the implementations and detailed examples in
+`src/shared/lib/algorithms/README.md` before adding another algorithm helper.
+Keep feature-only collection logic local until the same mechanics are genuinely
+needed by a second caller.
+
+### Database first, in-memory algorithms second
+
+For Convex-backed data, narrow the data **before** it reaches TypeScript memory.
+Do not fetch or `.collect()` an entire growing table so that client/server
+TypeScript can search, sort, count, deduplicate, or build a `Map` over it.
+The normal flow is:
+
+1. Let Convex identify the smallest useful result set with direct id lookup,
+   indexes/search indexes, ordering, aggregates, and bounded pagination.
+2. Return only that bounded result set.
+3. Use `src/shared/lib/algorithms` only for transformations/lookups on data that
+   is already in memory.
+
+Use these choices for Convex/database work:
+
+| Need                                                | Prefer                                                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------------- |
+| One document when its Convex `_id` is already known | direct `ctx.db.get(...)` lookup                                           |
+| Equality/range query by known fields                | an appropriate schema index + `.withIndex(...)`                           |
+| Full-text search                                    | the configured Convex search index, not an in-memory scan                 |
+| A potentially large result list                     | indexed ordering plus `.take(...)` / pagination; keep it bounded          |
+| Routine exact totals/counts over growing tables     | existing aggregate/counter/materialized projection; do not scan the table |
+| Small result set already returned by Convex         | in-memory helpers below are appropriate                                   |
+
+An in-memory `O(log n)` or `O(1)` lookup does **not** repair an inefficient
+query that first fetched `n` database documents. Optimize the database boundary
+first. `chunk()` is for batching an array already in memory; it is not database
+pagination.
+
+### In-memory algorithm choice
+
+Use the simplest operation that fits the already-loaded, bounded data:
+
+| Need                                           | Utility / structure                                                                       | Typical time                        | Use when                                                                                |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------- |
+| Exact key lookup many times                    | `indexBy()` / `uniqueIndexBy()` then `Map.get()`                                          | build `O(n)`, lookup `O(1)` average | the same loaded collection will be queried repeatedly by id/SKU/key                     |
+| Membership many times                          | `Set.has()`                                                                               | build `O(n)`, lookup `O(1)` average | repeated exact membership checks                                                        |
+| One lookup in an unsorted array                | `linearFind()` / `linearFindIndex()`                                                      | `O(n)`                              | the array is small/bounded or searched only once/few times                              |
+| Lookup in an already-sorted array              | `binarySearch()` / `binarySearchIndex()`                                                  | `O(log n)`                          | the collection is already sorted by the same comparator and will be searched repeatedly |
+| Find duplicate/range boundaries in sorted data | `lowerBound()` / `upperBound()`                                                           | `O(log n)`                          | the same sorted order is already available                                              |
+| Remove duplicates                              | `uniqueBy()`                                                                              | `O(n)` average                      | deduplicate a bounded in-memory collection; avoid nested `findIndex` patterns           |
+| Count distinct values                          | `countDistinctBy()`                                                                       | `O(n)` average                      | count unique keys in an already-fetched collection, not an entire growing DB table      |
+| Group by key                                   | `groupBy()`                                                                               | `O(n)` average                      | group returned products/order items/variants by a field                                 |
+| Count by key                                   | `countBy()`                                                                               | `O(n)` average                      | build counts inside a bounded returned result set                                       |
+| Split by predicate                             | `partition()`                                                                             | `O(n)`                              | produce matching/non-matching groups in one pass                                        |
+| Intersection/difference of two collections     | `intersectionBy()` / `differenceBy()`                                                     | `O(n + m)` average                  | compare two loaded collections; prefer `Set` to nested loops                            |
+| Sum a derived number                           | `sumBy()`                                                                                 | `O(n)`                              | every loaded item must contribute to the result                                         |
+| Sort loaded data                               | `sortCopy()` / `sortBy()`                                                                 | usually `O(n log n)`                | the result set is bounded and sorting cannot/should not be performed by the database    |
+| Take top N from loaded data                    | `topN()`                                                                                  | currently `O(n log n)`              | only for small/bounded arrays; for large DB data, order + limit in Convex               |
+| Compare theoretical growth                     | `estimateWork()`, `estimateRepeatedWork()`, `compareComplexities()`, `analyzeAlgorithm()` | analytical only                     | reasoning/tests/docs; never use these functions as a runtime query planner              |
+
+Do not sort an unsorted array only to perform one binary search: sorting costs
+`O(n log n)`, so a one-time `O(n)` linear search is normally simpler and cheaper.
+Binary search earns its value when sorted order already exists or many searches
+reuse it. Likewise, building a `Map` costs `O(n)` time and `O(n)` extra memory;
+it is useful when repeated `O(1)` average lookups repay that build cost.
+
+Avoid accidental quadratic work such as nested `find`, `findIndex`, `some`, or
+loops over the same growing collections. When the task is exact membership,
+deduplication, grouping, or joining two in-memory collections, check whether a
+`Set` or `Map` can turn repeated scans into an `O(n)` or `O(n + m)` pass.
+`O(n²)`, exponential, and factorial work on user/data-sized inputs require an
+explicit, tiny upper bound and a reason; do not introduce them casually.
+
+### Index decision heuristic
+
+Do not decide whether a database column needs an index from row count alone.
+Consider at least:
+
+- `N`: rows/documents that an unbounded query could examine;
+- `Q`: frequency of reads using this lookup/filter/order;
+- `W`: frequency of writes that must maintain the index;
+- `S`: typical selectivity, the fraction of rows/documents matched by the query.
+
+Use `Q * N` only as a rough "scan pressure" signal: a modest table queried very
+frequently can be a larger problem than a huge table queried once a day. A
+useful conceptual comparison is scan work versus indexed work, approximately
+`N` versus `log2(N) + matchingRows`; it is not a promise of Convex's exact
+runtime or billing behavior. Indexes cost storage and write maintenance, so add
+indexes for real query patterns rather than indexing every field defensively. Use
+`analyzeIndex()` only as a project-local pre-check for these factors; its score
+and recommendation are heuristic and never override the real Convex query shape,
+index requirements, measurements, or generated Convex guidance.
+
+A strong index candidate is a routine/hot equality, range, ordering, ownership,
+or relationship lookup that materially narrows the data before it is returned.
+A weak candidate is a field that is never queried, or an index added only
+because the table crossed an arbitrary row threshold. Prefer compound indexes
+that match actual query prefixes/order rather than several speculative indexes.
+For every routine growing-list query, design the query and index together and
+keep its returned range bounded.
+
+### Complexity is a constraint, not the goal
+
+When comparing implementations, estimate repeated work conceptually as
+`Q * f(N)`, where `f(N)` is the operation's growth (`1`, `log2(N)`, `N`,
+`N log2(N)`, `N²`, ...). This is a prioritization aid, not a benchmark: constants,
+allocation, network/database reads, cache locality, result size, and write costs
+still matter. Do not replace a clear, fast-enough implementation with a more
+complex one only to obtain a better Big-O label. Measure important hot paths and
+optimize the actual bottleneck. `analyzeAlgorithm()` automates this abstract
+`Q * f(N)` comparison for already-loaded data; its pressure label is not a
+runtime benchmark or latency prediction.
+
 ## Convex data model and function surface
 
 `src/convex/schema.ts` owns app tables:
@@ -227,25 +356,22 @@ flags or waits on `Promise.all`.
 - `storageUploads`: owner, object key, `pending`/`uploaded` status, timestamp,
   and key/created-at indexes. It tracks uploads until a mutation claims them.
 - `dailySales`: one row per UTC day and shard (`DAILY_SALES_SHARD_COUNT` shards,
-  chosen by hashing the order id) with order counts by status, paid revenue,
-  and a mergeable buyer sketch (`buyersSketch`). The `orders` trigger in
-  `aggregates/triggersAggregate.ts` keeps it current, so dashboard queries read
-  at most one row per day and shard instead of scanning orders. Backfill or
-  repair with the `ensureDailySalesRows` and `rebuildDailySales` migrations;
-  re-shard with `resetDailySales` first. The sketch hashes `orders.customerId`,
-  so keep one canonical buyer key format (see
-  [`FutureAnalyticsMetrics.md`](./FutureAnalyticsMetrics.md)).
+  chosen by hashing the order id) with order counts by status and paid revenue.
+  The `orders` trigger in `aggregates/triggersAggregate.ts` keeps it current, so
+  dashboard queries read at most one row per day and shard instead of scanning
+  orders. Backfill or repair with the `ensureDailySalesRows` and
+  `rebuildDailySales` migrations; re-shard with `resetDailySales` first.
 - `products` + `orderItems`: catalog and line items (`orderId`, `productId`,
   `quantity`, `lineTotalCents`) with order/product indexes.
-- `dailyProductSales`: one row per UTC day, product, and shard
-  (`DAILY_SALES_SHARD_COUNT` shards, chosen by hashing the order id) with paid
-  `quantity` and `revenue`, kept current by the same `orders`/`orderItems`
-  triggers. Top products read from it (`fetchTopProducts`); when a range
-  exceeds one query's read budget, `fetchTopProductsExact` splits by day and
-  then by product-id range, so nothing caps out. Repair with the
-  `rebuildDailyProductSales` migrations.
 - Better Auth owns its component tables (`user`, `session`, `account`,
   `verification`, rate-limit/JWKS tables) under `betterAuth/component`.
+
+Always use Convex's generated `Doc<'table'>` type from
+`src/convex/_generated/dataModel` for Convex documents across the client,
+server, components, hooks, and tests. Do not derive document types with
+`FunctionReturnType<...>['items'][number]`; reserve `FunctionReturnType` for
+query-specific response envelopes or intentionally enriched response types,
+intersecting those with `Doc<'table'>` when needed.
 
 Use the custom builders in `convexFunctionBuilders.ts`:
 
@@ -347,6 +473,11 @@ Pages should compose existing loading/error/empty states, use `SvelteHead`, and
 keep each Convex query's loading/error branch local. Use SvelteKit server
 `load` only for request-scoped SSR data or guards; current browser Convex calls
 are live subscriptions, not SvelteKit stream responses.
+
+- When Paraglide is configured, translation keys in page child components use
+  the PageName.ComponentName.key namespace and page-owned route markup uses
+  PageName.key. In a project without Paraglide, ignore all translation-key
+  guidance.
 
 ## Accessibility, imports, and verification
 

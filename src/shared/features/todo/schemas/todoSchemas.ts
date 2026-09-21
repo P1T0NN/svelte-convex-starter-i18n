@@ -3,10 +3,7 @@ import { TODO_MAX_TITLE_LENGTH } from '../config';
 
 const todoId = z.string().min(1);
 const todoTitle = z.string().min(1).max(TODO_MAX_TITLE_LENGTH);
-const todoPrice = z
-	.number()
-	.int()
-	.refine(Number.isSafeInteger, 'Todo price must be a safe integer');
+const todoPrice = z.number().int().refine(Number.isSafeInteger, 'INVALID_TODO_PRICE');
 
 export const createTodoSchema = z.object({
 	title: todoTitle,

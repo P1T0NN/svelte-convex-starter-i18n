@@ -67,7 +67,7 @@ async function seedOrders(t: ReturnType<typeof convexTest>) {
 	});
 }
 
-test('aggregates revenue, orders, customers, and average order value for the range', async () => {
+test('aggregates revenue, orders, and average order value for the range', async () => {
 	const t = convexTest(schema, modules);
 	await seedOrders(t);
 
@@ -81,7 +81,6 @@ test('aggregates revenue, orders, customers, and average order value for the ran
 	expect(stats).toEqual({
 		revenue: 3000,
 		orders: 3,
-		customers: 2,
 		averageOrderValue: 1500
 	});
 });
@@ -116,13 +115,11 @@ test('returns current and previous period stats for admins', async () => {
 	expect(comparison.current).toEqual({
 		revenue: 3000,
 		orders: 3,
-		customers: 2,
 		averageOrderValue: 1500
 	});
 	expect(comparison.previous).toEqual({
 		revenue: 500,
 		orders: 1,
-		customers: 1,
 		averageOrderValue: 500
 	});
 
@@ -158,13 +155,11 @@ test('compares partial ranges against full previous days', async () => {
 	expect(comparison.current).toEqual({
 		revenue: 1000,
 		orders: 1,
-		customers: 1,
 		averageOrderValue: 1000
 	});
 	expect(comparison.previous).toEqual({
 		revenue: 700,
 		orders: 1,
-		customers: 1,
 		averageOrderValue: 700
 	});
 });
@@ -182,13 +177,11 @@ test('returns an empty previous window when the range has no prior data', async 
 	expect(comparison.current).toEqual({
 		revenue: 1000,
 		orders: 1,
-		customers: 1,
 		averageOrderValue: 1000
 	});
 	expect(comparison.previous).toEqual({
 		revenue: 0,
 		orders: 0,
-		customers: 0,
 		averageOrderValue: 0
 	});
 });
@@ -234,7 +227,6 @@ test('keeps the daily rollup in sync when an order is deleted', async () => {
 	expect(stats).toEqual({
 		revenue: 2000,
 		orders: 2,
-		customers: 2,
 		averageOrderValue: 2000
 	});
 });

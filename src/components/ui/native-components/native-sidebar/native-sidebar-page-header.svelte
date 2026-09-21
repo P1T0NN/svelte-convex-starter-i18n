@@ -8,6 +8,9 @@
 	import { Button } from '@/components/ui/button/index.js';
 	import { m } from '@/lib/paraglide/messages';
 
+	// UTILS
+	import { linearFind } from '@/shared/lib/algorithms/index.js';
+
 	type Breadcrumb = {
 		label: string;
 		href?: string;
@@ -52,7 +55,8 @@
 	const getPathSegment = (segment: string) => {
 		if (!isDynamicSegment(segment)) return segment;
 
-		const value = Object.entries(page.params).find(
+		const value = linearFind(
+			Object.entries(page.params),
 			([name]) => name === getRouteParameterName(segment)
 		)?.[1];
 		return segment.includes('...') ? (value ?? '') : value ? encodeURIComponent(value) : '';

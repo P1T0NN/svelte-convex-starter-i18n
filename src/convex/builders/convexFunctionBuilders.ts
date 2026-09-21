@@ -33,6 +33,9 @@ import { getUploadByKey } from '../storage/getUploadByKey.js';
 // CONFIG
 import { STORAGE_CONFIG } from '../../shared/features/storage/config.js';
 
+// UTILS
+import { countDistinctBy } from '../../shared/lib/algorithms/index.js';
+
 // TYPES
 import type { Doc } from '../_generated/dataModel.js';
 import type { RateLimitedFunctionOptions } from '../rateLimits/types/rateLimitTypes.js';
@@ -115,7 +118,10 @@ const authenticatedUploadContext = (rateLimited: boolean) => ({
 				maxFiles: STORAGE_CONFIG.maxFilesPerUpload
 			});
 		}
-		if (keys && new Set(keys).size !== keys.length) {
+		const hasDuplicateKeys =
+			keys !== undefined && countDistinctBy(keys, (key) => key) !== keys.length;
+
+		if (hasDuplicateKeys) {
 			throw new ConvexError<BackendErrorData>({ code: 'DUPLICATE_UPLOAD_KEY' });
 		}
 

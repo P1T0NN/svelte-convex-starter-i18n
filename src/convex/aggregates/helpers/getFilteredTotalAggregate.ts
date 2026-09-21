@@ -5,6 +5,9 @@ import type { Value as ConvexValue } from 'convex/values';
 // CONVEX
 import type { QueryCtx } from '../../_generated/server';
 
+// UTILS
+import { sumBy } from '../../../shared/lib/algorithms/index.js';
+
 /** Sum bounded aggregate counts for a filtered result set. */
 export async function getFilteredTotalAggregate<
 	K extends Key,
@@ -18,5 +21,5 @@ export async function getFilteredTotalAggregate<
 	if (queries.length === 0) return 0;
 
 	const counts = await aggregate.countBatch(ctx, queries);
-	return counts.reduce((total, count) => total + count, 0);
+	return sumBy(counts, (count) => count);
 }
