@@ -36,6 +36,7 @@
 
 	// svelte-ignore state_referenced_locally (the parent keys this component by task._id, so values intentionally initializes once per todo)
 	let values = $state({ title: task.title, done: task.done });
+	
 	// svelte-ignore state_referenced_locally (the parent keys this component by task._id, so files intentionally initialize once per todo)
 	let uploadFiles = $state<PreviewFile[]>(
 		task.images.map((url, index) => ({

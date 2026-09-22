@@ -8,7 +8,6 @@
 	import FormSelect from './form-select.svelte';
 	import FormTextarea from './form-textarea.svelte';
 	import FormUploadFile from './form-upload-file.svelte';
-	import { FieldError } from '@/components/ui/field/index.js';
 	import { m } from '@/lib/paraglide/messages';
 
 	// HOOKS
@@ -25,12 +24,12 @@
 	import type {
 		FieldConfig,
 		CustomFields,
-		ExtraFields,
 		FormSchema,
 		InputField,
 		MutationValues,
 		SelectField,
-		TextareaField
+		TextareaField,
+		UploadContext
 	} from './formTypes.js';
 	import type { PreviewFile } from '@/features/uploadFile/types/uploadFileTypes.js';
 
@@ -41,7 +40,9 @@
 		captchaAction?: string;
 		fields?: FieldConfig[];
 		/** Additional payload values, merged before schema validation. */
-		extraFields?: ExtraFields<Mutation>;
+		extraFields?: MutationValues<Mutation>;
+		/** Upload-aware payload values; resolved before and after the uploads finish. */
+		resolveExtraFields?: (uploads: UploadContext) => MutationValues<Mutation>;
 		customFields?: CustomFields;
 		onSuccess?: (result: FunctionReturnType<Mutation>) => void | Promise<void>;
 		successMessage?: string;
@@ -63,6 +64,7 @@
 		captchaAction,
 		fields = [],
 		extraFields,
+		resolveExtraFields,
 		customFields,
 		onSuccess,
 		successMessage = m['Components.Form.savedSuccessfully'](),
@@ -90,6 +92,7 @@
 			fields,
 			uploadNamespace,
 			extraFields,
+			resolveExtraFields,
 			onSuccess,
 			successMessage,
 			errorMessage,
@@ -118,12 +121,6 @@
 			}
 		},
 		captcha
-	);
-
-	const validationErrors = $derived(
-		Object.values(form.errors)
-			.filter(Boolean)
-			.map((message) => ({ message }))
 	);
 
 	const handleCaptchaToken = (token: string) => {
@@ -165,6 +162,7 @@
 			{field}
 			bind:uploadFiles
 			{submitting}
+			error={form.errors[field.name]}
 			uploadProgress={form.uploadProgress}
 			preparingUpload={form.preparingUpload}
 		/>
@@ -190,8 +188,6 @@
 	{/each}
 
 	{@render customFields?.(form.fieldContext)}
-
-	<FieldError data-form-errors tabindex={-1} errors={validationErrors} />
 
 	{#if captchaAction}
 		<CaptchaField

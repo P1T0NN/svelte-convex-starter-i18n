@@ -22,11 +22,11 @@ import type {
 	CustomField,
 	CustomFieldContext,
 	FieldConfig,
-	ExtraFields,
 	FormFieldContext,
 	FormSchema,
 	FormValue,
-	MutationValues
+	MutationValues,
+	UploadContext
 } from './formTypes.js';
 import type { FunctionArgs, FunctionReference, FunctionReturnType } from 'convex/server';
 
@@ -43,7 +43,8 @@ type UseFormOptions<Mutation extends FunctionReference<'mutation' | 'action'>> =
 	captchaAction?: string;
 	fields: FieldConfig[];
 	uploadNamespace?: string;
-	extraFields?: ExtraFields<Mutation>;
+	extraFields?: MutationValues<Mutation>;
+	resolveExtraFields?: (uploads: UploadContext) => MutationValues<Mutation>;
 	onSuccess?: (result: FunctionReturnType<Mutation>) => void | Promise<void>;
 	successMessage: string;
 	errorMessage: string;
@@ -64,6 +65,15 @@ export function useForm<Mutation extends FunctionReference<'mutation' | 'action'
 	captcha: CaptchaApi
 ) {
 	const options = $derived(getOptions());
+
+	const resolveExtraFields = (
+		uploadedFiles: string[],
+		retainedFiles: string[],
+		uploadFiles: PreviewFile[]
+	): MutationValues<Mutation> =>
+		options.resolveExtraFields?.({ uploadedFiles, retainedFiles, uploadFiles }) ??
+		options.extraFields ??
+		{};
 
 	let errors = $state<Record<string, string>>({});
 	let uploadProgress = $state<number | null>(null);
@@ -215,13 +225,26 @@ export function useForm<Mutation extends FunctionReference<'mutation' | 'action'
 		let captchaUsed = false;
 
 		const uploadEnabled = hasUploadField(options.fields);
+		const hasUploadAwareExtraFields = Boolean(options.resolveExtraFields);
 
 		bindings.submitting = true;
 
 		try {
-			const parsed = await options.schema.safeParseAsync(
-				$state.snapshot({ ...bindings.values, ...options.extraFields })
-			);
+			if (uploadEnabled) {
+				retainedFiles = bindings.uploadFiles.flatMap((preview) =>
+					preview.key ? [preview.key] : []
+				);
+			}
+
+			const validate = () =>
+				options.schema.safeParseAsync(
+					$state.snapshot({
+						...bindings.values,
+						...resolveExtraFields(uploadedFiles, retainedFiles, bindings.uploadFiles)
+					})
+				);
+
+			let parsed = await validate();
 
 			if (!parsed.success) {
 				errors = formValidationErrors(parsed.error.issues);
@@ -237,13 +260,20 @@ export function useForm<Mutation extends FunctionReference<'mutation' | 'action'
 
 			captchaUsed = Boolean(captchaAction);
 
-			if (uploadEnabled) {
-				retainedFiles = bindings.uploadFiles.flatMap((preview) =>
-					preview.key ? [preview.key] : []
-				);
-				if (bindings.uploadFiles.some((preview) => preview.file)) {
-					uploadedFiles = await uploadSelectedFiles();
-					uploadProgress = null;
+			if (uploadEnabled && bindings.uploadFiles.some((preview) => preview.file)) {
+				uploadedFiles = await uploadSelectedFiles();
+				uploadProgress = null;
+
+				if (hasUploadAwareExtraFields) {
+					// Uploaded keys can change resolved extra fields; validate the final payload again.
+					parsed = await validate();
+
+					if (!parsed.success) {
+						errors = formValidationErrors(parsed.error.issues);
+						await removeUploads(uploadedFiles);
+						toast.error(m['Components.Form.fixHighlightedFields']());
+						return;
+					}
 				}
 			}
 

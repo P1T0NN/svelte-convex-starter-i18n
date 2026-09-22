@@ -2,6 +2,7 @@
 import type { Snippet } from 'svelte';
 import type { FunctionArgs, FunctionReference } from 'convex/server';
 import type { ZodType } from 'zod';
+import type { PreviewFile } from '@/features/uploadFile/types/uploadFileTypes.js';
 
 export type FormFieldValue = string | number | boolean;
 export type FormValue =
@@ -13,6 +14,12 @@ export type MutationValues<Mutation extends FunctionReference<'mutation' | 'acti
 export type ExtraFields<Mutation extends FunctionReference<'mutation' | 'action'>> = Partial<
 	Omit<FunctionArgs<Mutation>, 'uploadedFiles' | 'retainedFiles' | 'turnstileToken'>
 >;
+
+export type UploadContext = {
+	uploadedFiles: string[];
+	retainedFiles: string[];
+	uploadFiles: PreviewFile[];
+};
 
 export type FormFieldContext<Value = FormFieldValue> = {
 	values: Record<string, Value | undefined>;

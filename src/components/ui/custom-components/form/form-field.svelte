@@ -40,6 +40,11 @@
 			{field.label}{#if field.required}<span class="text-destructive"> *</span>{/if}
 		</FieldLabel>
 	{/if}
+	{#if field.description}<FieldDescription>{field.description}</FieldDescription>{/if}
+{/snippet}
+
+{#snippet errorMessage()}
+	{#if error}<FieldError id={`${field.name}-error`}>{error}</FieldError>{/if}
 {/snippet}
 
 <Field
@@ -53,11 +58,15 @@
 
 	<FieldContent>
 		{@render children?.()}
-		{#if field.description}<FieldDescription>{field.description}</FieldDescription>{/if}
-		{#if error}<FieldError id={`${field.name}-error`}>{error}</FieldError>{/if}
+		{#if labelPosition === 'before'}
+			{@render errorMessage()}
+		{/if}
 	</FieldContent>
 
 	{#if labelPosition === 'after'}
-		{@render label()}
+		<FieldContent>
+			{@render label()}
+			{@render errorMessage()}
+		</FieldContent>
 	{/if}
 </Field>
