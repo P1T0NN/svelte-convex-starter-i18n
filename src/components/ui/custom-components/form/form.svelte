@@ -8,6 +8,7 @@
 	import FormSelect from './form-select.svelte';
 	import FormTextarea from './form-textarea.svelte';
 	import FormUploadFile from './form-upload-file.svelte';
+	import { FieldError } from '@/components/ui/field/index.js';
 	import { m } from '@/lib/paraglide/messages';
 
 	// HOOKS
@@ -23,24 +24,25 @@
 	import type { FunctionReference, FunctionReturnType } from 'convex/server';
 	import type {
 		FieldConfig,
-		FormFieldContext,
-		FormValue,
+		CustomFields,
+		ExtraFields,
+		FormSchema,
 		InputField,
 		MutationValues,
-		PreparedMutationArgs,
 		SelectField,
-		TextareaField,
-		UploadPrepareContext
+		TextareaField
 	} from './formTypes.js';
 	import type { PreviewFile } from '@/features/uploadFile/types/uploadFileTypes.js';
 
-	type ExtraFieldsContext = FormFieldContext<FormValue<Mutation>>;
 	type Props = Omit<WithElementRef<HTMLAttributes<HTMLFormElement>>, 'onsubmit'> & {
 		function: Mutation;
+		schema: FormSchema;
 		functionType?: 'mutation' | 'action';
 		captchaAction?: string;
 		fields?: FieldConfig[];
-		extraFields?: Snippet<[ExtraFieldsContext]>;
+		/** Additional payload values, merged before schema validation. */
+		extraFields?: ExtraFields<Mutation>;
+		customFields?: CustomFields;
 		onSuccess?: (result: FunctionReturnType<Mutation>) => void | Promise<void>;
 		successMessage?: string;
 		errorMessage?: string;
@@ -49,7 +51,6 @@
 		resetOnSuccess?: boolean;
 		uploadFiles?: PreviewFile[];
 		uploadNamespace?: string;
-		prepareArgs?: (context: UploadPrepareContext<Mutation>) => PreparedMutationArgs<Mutation>;
 		values?: MutationValues<Mutation>;
 		submitting?: boolean;
 		children?: Snippet;
@@ -57,10 +58,12 @@
 
 	let {
 		function: convexFunction,
+		schema,
 		functionType = 'mutation',
 		captchaAction,
 		fields = [],
 		extraFields,
+		customFields,
 		onSuccess,
 		successMessage = m['Components.Form.savedSuccessfully'](),
 		errorMessage = m['Components.Form.somethingWentWrong'](),
@@ -69,7 +72,6 @@
 		resetOnSuccess = true,
 		uploadFiles = $bindable<PreviewFile[]>([]),
 		uploadNamespace,
-		prepareArgs,
 		values = $bindable<MutationValues<Mutation>>({}),
 		submitting = $bindable(false),
 		id,
@@ -79,15 +81,23 @@
 	}: Props = $props();
 
 	const captcha = useCaptcha();
-	const form = useForm({
-		function: () => convexFunction,
-		functionType: () => functionType,
-		captchaAction: () => captchaAction,
-		captchaToken: () => captcha.token,
-		executeCaptcha: captcha.execute,
-		resetCaptcha: captcha.reset,
-		fields: () => fields,
-		bindings: {
+	const form = useForm(
+		() => ({
+			function: convexFunction,
+			schema,
+			functionType,
+			captchaAction,
+			fields,
+			uploadNamespace,
+			extraFields,
+			onSuccess,
+			successMessage,
+			errorMessage,
+			uploadErrorMessage,
+			uploadCancelledMessage,
+			resetOnSuccess
+		}),
+		{
 			get values() {
 				return values;
 			},
@@ -107,15 +117,15 @@
 				submitting = nextSubmitting;
 			}
 		},
-		uploadNamespace: () => uploadNamespace,
-		prepareArgs: () => prepareArgs,
-		onSuccess: () => onSuccess,
-		successMessage: () => successMessage,
-		errorMessage: () => errorMessage,
-		uploadErrorMessage: () => uploadErrorMessage,
-		uploadCancelledMessage: () => uploadCancelledMessage,
-		resetOnSuccess: () => resetOnSuccess
-	});
+		captcha
+	);
+
+	const validationErrors = $derived(
+		Object.values(form.errors)
+			.filter(Boolean)
+			.map((message) => ({ message }))
+	);
+
 	const handleCaptchaToken = (token: string) => {
 		captcha.setToken(token);
 		if (token) form.resumeAfterCaptcha();
@@ -146,6 +156,7 @@
 		<FormCheckbox
 			{field}
 			checked={form.checkboxValue(field.name)}
+			error={form.errors[field.name]}
 			disabled={submitting || field.disabled}
 			onCheckedChange={(checked) => form.setValue(field.name, checked)}
 		/>
@@ -160,7 +171,7 @@
 	{:else if field.kind === 'section'}
 		<FormSection {field} renderField={renderLocalField} />
 	{:else if field.kind === 'custom'}
-		<FormField {field} disabled={submitting || field.disabled}>
+		<FormField {field} error={form.errors[field.name]} disabled={submitting || field.disabled}>
 			{@render field.render(form.customFieldContext(field))}
 		</FormField>
 	{/if}
@@ -178,7 +189,9 @@
 		{@render renderLocalField(field)}
 	{/each}
 
-	{@render extraFields?.(form.fieldContext)}
+	{@render customFields?.(form.fieldContext)}
+
+	<FieldError data-form-errors tabindex={-1} errors={validationErrors} />
 
 	{#if captchaAction}
 		<CaptchaField

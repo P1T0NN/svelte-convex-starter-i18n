@@ -1,32 +1,22 @@
 // TYPES
 import type { Snippet } from 'svelte';
 import type { FunctionArgs, FunctionReference } from 'convex/server';
-import type { PreviewFile } from '@/features/uploadFile/types/uploadFileTypes.js';
+import type { ZodType } from 'zod';
 
 export type FormFieldValue = string | number | boolean;
-export type FormValues = Record<string, FormFieldValue>;
-
-type MutationValue<Mutation extends FunctionReference<'mutation' | 'action'>> =
-	FunctionArgs<Mutation>[keyof FunctionArgs<Mutation>];
-export type FormValue<Mutation extends FunctionReference<'mutation' | 'action'>> =
-	MutationValue<Mutation> | FormFieldValue;
-export type MutationValues<Mutation extends FunctionReference<'mutation' | 'action'>> = Partial<
-	Omit<FunctionArgs<Mutation>, 'uploadedFiles' | 'retainedFiles'>
-> &
-	Record<string, FormValue<Mutation> | undefined>;
-export type UploadPrepareContext<Mutation extends FunctionReference<'mutation' | 'action'>> = {
-	values: MutationValues<Mutation>;
-	uploadedFiles: string[];
-	retainedFiles: string[];
-	uploadFiles: PreviewFile[];
-};
-export type PreparedMutationArgs<Mutation extends FunctionReference<'mutation' | 'action'>> = Omit<
-	FunctionArgs<Mutation>,
-	'uploadedFiles' | 'retainedFiles'
+export type FormValue =
+	FormFieldValue | null | undefined | bigint | ArrayBuffer | FormValue[] | FormValues;
+export type FormValues = { [name: string]: FormValue };
+export type FormSchema = ZodType<FormValues>;
+export type MutationValues<Mutation extends FunctionReference<'mutation' | 'action'>> =
+	ExtraFields<Mutation> & FormValues;
+export type ExtraFields<Mutation extends FunctionReference<'mutation' | 'action'>> = Partial<
+	Omit<FunctionArgs<Mutation>, 'uploadedFiles' | 'retainedFiles' | 'turnstileToken'>
 >;
 
 export type FormFieldContext<Value = FormFieldValue> = {
 	values: Record<string, Value | undefined>;
+	errors: Record<string, string>;
 	getValue: (name: string) => Value | undefined;
 	setValue: (name: string, value: Value | undefined) => void;
 	inputValue: (name: string) => string;
@@ -35,6 +25,7 @@ export type FormFieldContext<Value = FormFieldValue> = {
 };
 
 export type BaseField = {
+	/** Dot-separated object path, e.g. shippingAddress.street. */
 	name: string;
 	label?: string;
 	description?: string;
@@ -57,6 +48,7 @@ export type FormSection = {
 
 export type CustomFieldContext = FormFieldContext<unknown> & {
 	field: CustomField;
+	error?: string;
 };
 
 export type CustomField = BaseField & {
@@ -93,4 +85,4 @@ export type UploadField = BaseField & {
 export type FormControlField = InputField | TextareaField | SelectField | CheckboxField;
 export type FieldConfig = FormControlField | FormSection | UploadField | CustomField;
 
-export type ExtraFields<Value = FormFieldValue> = Snippet<[FormFieldContext<Value>]>;
+export type CustomFields<Value = FormValue> = Snippet<[FormFieldContext<Value>]>;

@@ -6,6 +6,9 @@
 	import { api } from '@convex/_generated/api';
 	import { m } from '@/lib/paraglide/messages';
 
+	// SCHEMAS
+	import { updateTodoSchema } from '@/shared/features/todo/schemas/todoSchemas.js';
+
 	// CONFIG
 	import { todoEditFields } from '@/features/todos/forms/editTodoForm.js';
 
@@ -32,7 +35,7 @@
 	let { task }: { task: TodoEditTask } = $props();
 
 	// svelte-ignore state_referenced_locally (the parent keys this component by task._id, so values intentionally initializes once per todo)
-	let values = $state({ id: task._id, title: task.title, done: task.done });
+	let values = $state({ title: task.title, done: task.done });
 	// svelte-ignore state_referenced_locally (the parent keys this component by task._id, so files intentionally initialize once per todo)
 	let uploadFiles = $state<PreviewFile[]>(
 		task.images.map((url, index) => ({
@@ -47,6 +50,8 @@
 <Form
 	class="w-full"
 	function={api.tables.tasks.mutations.updateTodo.updateTodo}
+	schema={updateTodoSchema}
+	extraFields={{ id: task._id }}
 	fields={todoEditFields}
 	uploadNamespace="todos"
 	bind:values

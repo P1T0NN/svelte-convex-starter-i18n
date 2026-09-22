@@ -6,6 +6,9 @@
 	import { api } from '@convex/_generated/api';
 	import { m } from '@/lib/paraglide/messages';
 
+	// SCHEMAS
+	import { createTodoSchema } from '@/shared/features/todo/schemas/todoSchemas.js';
+
 	// CONSTANTS
 	import { PROTECTED_PAGE_ENDPOINTS } from '@/shared/constants/pageEndpoints';
 
@@ -52,6 +55,7 @@
 	<Form
 		class="w-full"
 		function={api.tables.tasks.mutations.createTodo.createTodo}
+		schema={createTodoSchema.omit({ images: true })}
 		functionType="action"
 		captchaAction="create_todo"
 		fields={createTodoFields}

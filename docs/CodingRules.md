@@ -205,6 +205,36 @@ Leave built-in Zod validation messages at their defaults. Custom refinements
 must emit stable uppercase codes, never hardcoded user-facing text. Keep
 translation imports out of shared schemas.
 
+## Form submission
+
+`Form` requires a Zod `schema`. It validates a snapshot of
+`{ ...values, ...extraFields }` with `safeParseAsync` before CAPTCHA, uploads,
+or the Convex call, and submits the parsed output. Put defaults, coercions,
+optional-empty handling, and conditional validation in that schema. Native
+`required`/`type` attributes describe controls; Zod decides whether to submit.
+
+- `extraFields` is a plain object of additional arguments, such as
+  `extraFields={{ id: task._id }}`. It overrides whole top-level values and
+  must be included in the schema. Zod object schemas strip undeclared keys.
+  Pass reactive expressions to keep cart/customer data current; initialize
+  browser-only values in an event handler or `onMount`.
+- Name nested controls `shippingAddress.street`, `shippingAddress.city`, etc.
+  `getValue`, `setValue`, and `bind:values` use the same nested object. Dotted
+  paths address objects; pass arrays as whole values from custom controls or
+  `extraFields`.
+- Hidden controls retain their values. For conditional payloads, use a Zod
+  discriminated union: a pickup branch without `shippingAddress` strips a
+  previously entered address while the delivery branch validates it.
+- `customFields` is the rendering snippet formerly named `extraFields`.
+  Snippet contexts expose `errors`; custom field contexts also expose `error`.
+  Connect custom controls' `aria-invalid` and `aria-describedby` to that error.
+- `prepareArgs`, `UploadPrepareContext`, and `PreparedMutationArgs` are removed.
+  Do not recreate the entire payload in a replacement callback.
+- Form attaches `uploadedFiles`, `retainedFiles`, and `turnstileToken` after
+  validation. These transport fields are not inputs to the form schema.
+  For creating todos, use `createTodoSchema.omit({ images: true })` because
+  the action accepts upload keys, not the shared schema's image defaults.
+
 ## Shared hooks, state, and utilities
 
 - `useSearchParams` owns only declared URL keys, preserves all other query
