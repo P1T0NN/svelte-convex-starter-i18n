@@ -6,6 +6,9 @@
 	import { createSvelteAuthClient } from '@mmailaender/convex-better-auth-svelte/svelte';
 	import { authClient } from '@/features/auth/lib/authClient';
 
+	// HOOKS
+	import { useAnalyticsLocal } from '@/features/analytics/hooks/useAnalyticsLocal.svelte.js';
+
 	// COMPONENTS
 	import { Toaster } from '@/components/ui/sonner/index.js';
 
@@ -15,6 +18,8 @@
 		authClient,
 		getServerState: () => data.authState
 	});
+
+	useAnalyticsLocal();
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>

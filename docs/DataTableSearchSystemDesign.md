@@ -69,11 +69,11 @@ table or task lookups for search results.
 
 ## Totals
 
-The unfiltered list reads `tasksCountAggregate` from `@vllnt/convex-analytics`, giving
-an O(1) maintained total. Search and filtered results do not request an exact
-count by default. An exact filtered count is an explicit server-side option,
-because it scales with the number of matches and is not required for cursor
-pagination.
+The unfiltered list reads the per-owner `taskTotalCounter`
+(`@convex-dev/sharded-counter`), giving an O(1) maintained total. A filter-only
+page adds the exact bounded count from `taskFilterAggregate`
+(`@convex-dev/aggregate`), which reads only the relevant key ranges. Text search
+omits `total`, because arbitrary search text has no exact count source.
 
 ## Live mutation behavior
 
@@ -91,12 +91,16 @@ by the storage delete queue and scheduled Convex action.
 `src/shared/features/pagination/types/paginationTypes.ts` contains the shared
 UI result/state types. `useConvexPagination` infers the item type from the
 query reference and accepts only non-pagination arguments. It owns cursor
-construction, page navigation, and reset identity; `fetchOptimizedQuery` owns
-the shared server-side pagination/search/filter arguments and normalization.
+construction, page navigation, and reset identity; `fetchTodos` validates the
+shared server-side pagination/search/filter arguments with `listPageArgs` and
+delegates one indexed page to `getTodoPage`, which normalizes symbolic filters
+through `readTodoFilters`.
 
-The same file owns `QueryContext`, `ConvexFetchPage`, `CountFiltered`, and
-`FetchOptimizedOptions`. This avoids duplicate local contracts and makes the
-query helper signatures consistent.
+`src/shared/features/pagination/types/paginationTypesConvex.ts` owns the
+Convex page contract (`GetPaginationOptions`, `ConvexPaginatedPage`,
+`ConvexPaginatedSource`) shared by `getPagination` and every table page helper.
+This avoids duplicate local contracts and makes the page-helper signatures
+consistent.
 
 The deleted Convex cursor utilities were only null-normalization wrappers.
 Native Convex pagination already owns cursor semantics, so the implementation
@@ -108,9 +112,11 @@ now uses `options.cursor ?? null` and `result.continueCursor` directly.
 - `src/shared/features/pagination/types/paginationTypes.ts`
 - `src/shared/features/pagination/types/paginationTypesConvex.ts`
 - `src/convex/helpers/getPagination.ts`
-- `src/convex/wrappers/fetchOptimizedQuery.ts`
+- `src/convex/validators/listPageArgs.ts`
 - `src/convex/tables/tasks/queries/fetchTodos.ts`
 - `src/convex/tables/tasks/helpers/getTodoPage.ts`
+- `src/convex/tables/tasks/helpers/readTodoFilters.ts`
+- `src/convex/tables/tasks/helpers/enrichTodoPage.ts`
 - `src/convex/tables/tasks/helpers/paginateTasks.ts`
 - `src/convex/helpers/paginateSearch.ts`
 

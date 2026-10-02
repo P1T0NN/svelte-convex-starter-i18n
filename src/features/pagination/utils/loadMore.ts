@@ -6,17 +6,17 @@ import type { LoadMorePaginationOptions } from '@/features/pagination/types/conv
 
 /** Commit the current page and request the next server cursor. */
 export function loadMore<Item>(options: LoadMorePaginationOptions<Item>): void {
-	if (
+	const cannotRequestNextPage =
 		!options.queryEnabled ||
 		(options.loadingMore && options.currentPage === undefined) ||
 		options.retrying ||
-		!options.visibleHasNextPage
-	)
-		return;
+		!options.visibleHasNextPage;
+	if (cannotRequestNextPage) return;
 
 	// The first page is derived before the session is promoted. A fresh page
 	// is sufficient to promote it when the sentinel asks for page two.
-	if (!options.isCurrentSession && options.currentPage === undefined) return;
+	const isWaitingForFirstPage = !options.isCurrentSession && options.currentPage === undefined;
+	if (isWaitingForFirstPage) return;
 
 	let session = options.getSession();
 	if (session.key !== options.resetKey) {
@@ -30,7 +30,8 @@ export function loadMore<Item>(options: LoadMorePaginationOptions<Item>): void {
 	if (!session.initialized) return;
 
 	const nextCursor = session.nextCursor;
-	if (nextCursor === null || nextCursor === session.cursor) {
+	const hasNoNewCursor = nextCursor === null || nextCursor === session.cursor;
+	if (hasNoNewCursor) {
 		session.hasNextPage = false;
 		return;
 	}

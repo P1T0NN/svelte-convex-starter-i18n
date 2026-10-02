@@ -49,7 +49,13 @@ export const updateTodo = authenticatedUploadMutation({
 
 		const existingKeys = task.imageKeys ?? task.images;
 		const retainedKeys = args.retainedFiles ?? existingKeys;
-		const hasInvalidRetainedImage = differenceBy(retainedKeys, existingKeys, (key) => key, (key) => key).length > 0;
+		const hasInvalidRetainedImage =
+			differenceBy(
+				retainedKeys,
+				existingKeys,
+				(key) => key,
+				(key) => key
+			).length > 0;
 
 		if (hasInvalidRetainedImage) {
 			throw new ConvexError<BackendErrorData>({ code: 'INVALID_RETAINED_IMAGE' });

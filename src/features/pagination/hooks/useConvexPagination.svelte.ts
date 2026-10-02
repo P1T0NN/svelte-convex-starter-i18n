@@ -1,5 +1,6 @@
 // LIBRARIES
 import type { FunctionReference } from 'convex/server';
+import type { UseQueryReturn } from 'convex-svelte';
 
 // BUILDERS
 import { createConvexPaginationQuery } from '@/features/pagination/builders/createConvexPaginationQuery.svelte.js';
@@ -31,7 +32,7 @@ export function useConvexPagination<Query extends FunctionReference<'query'>>(
 	query: Query,
 	args: ConvexPaginationArgs<Query>,
 	options: ConvexPaginationOptions = {}
-): PaginationState<ConvexPaginationItem<Query>> {
+): PaginationState<ConvexPaginationItem<Query>> & { result: UseQueryReturn<Query> } {
 	let session = $state(createPaginationSession(undefined));
 
 	function getActiveSession(key: string): PaginationSession {
@@ -82,8 +83,9 @@ export function useConvexPagination<Query extends FunctionReference<'query'>>(
 	}
 
 	function onNext(): void {
-		if (nextCursor == null || (totalPages !== undefined && activeSession.page >= totalPages))
-			return;
+		const isLastPage = totalPages !== undefined && activeSession.page >= totalPages;
+		const cannotAdvance = nextCursor == null || isLastPage;
+		if (cannotAdvance) return;
 		const currentSession = getMutableSession();
 		currentSession.cursors[currentSession.page + 1] = nextCursor;
 		currentSession.page += 1;
@@ -110,6 +112,9 @@ export function useConvexPagination<Query extends FunctionReference<'query'>>(
 		},
 		get total() {
 			return total;
+		},
+		get result() {
+			return result;
 		},
 		onPrev,
 		onNext

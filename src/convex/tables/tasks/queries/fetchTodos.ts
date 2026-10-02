@@ -1,30 +1,44 @@
-// WRAPPERS
-import { fetchOptimizedQuery } from '../../../wrappers/fetchOptimizedQuery';
+// LIBRARIES
+import { v } from 'convex/values';
 
-// UTILS
-import { todoPredicateFor } from '../../../../shared/features/todo/utils/filterPredicates.js';
+// CONVEX
+import { authenticatedQuery } from '../../../builders/convexFunctionBuilders.js';
 
 // COUNTERS
 import { taskTotalCounter } from '../counters/taskTotalCounter.js';
 
 // HELPERS
 import { getFilteredTodoTotalAggregate } from '../helpers/getFilteredTodoTotalAggregate.js';
-import { taskFilterAggregate } from '../aggregates/taskFilterAggregate.js';
 import { getTodoPage } from '../helpers/getTodoPage.js';
+import { readTodoFilters } from '../helpers/readTodoFilters.js';
+import { withTodoListItems } from '../helpers/enrichTodoPage.js';
 import { getOwnerId } from '../../../betterAuth/helpers/requireIdentity.js';
 
 // VALIDATORS
-import { todoPage } from '../validators/todoValidators';
+import { listPageArgs } from '../../../validators/listPageArgs.js';
+import { todoPage } from '../validators/todoValidators.js';
 
-export const fetchTodos = fetchOptimizedQuery({
-	auth: 'user',
+export const fetchTodos = authenticatedQuery({
+	args: { ...listPageArgs, now: v.optional(v.number()) },
 	returns: todoPage,
-	count: taskFilterAggregate,
-	countTotal: ({ ctx, identity }) => taskTotalCounter.count(ctx, getOwnerId(identity)),
-	predicateFor: (key, value, args) => todoPredicateFor(key, value, args.now),
-	filteredTotal: 'exact',
-	countFiltered: async ({ ctx, identity, search, filters }) =>
-		search ? undefined : getFilteredTodoTotalAggregate(ctx, getOwnerId(identity), filters),
-	fetchPage: ({ ctx, identity, paginationOpts, search, filters }) =>
-		getTodoPage(ctx, getOwnerId(identity), paginationOpts, search, filters)
+	handler: async (ctx, args) => {
+		const search = args.search?.trim() || undefined;
+		const filters = readTodoFilters(args.filters, args.now);
+		const hasFilters =
+			filters.done !== undefined ||
+			filters.priceBand !== undefined ||
+			filters.createdAtFrom !== undefined;
+		const ownerId = getOwnerId(ctx.identity);
+		const canCountTotal = !search;
+		const page = await getTodoPage(ctx, ownerId, args.paginationOpts, search, filters);
+		const items = await withTodoListItems({ items: page.items });
+		let total: number | undefined;
+		if (canCountTotal) {
+			total = hasFilters
+				? await getFilteredTodoTotalAggregate(ctx, ownerId, filters)
+				: await taskTotalCounter.count(ctx, ownerId);
+		}
+
+		return { ...page, items, total };
+	}
 });

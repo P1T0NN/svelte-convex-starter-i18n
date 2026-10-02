@@ -2,17 +2,18 @@ import type { PaginationOptions } from 'convex/server';
 import type { QueryCtx } from '../../../_generated/server';
 import { getPagination } from '../../../helpers/getPagination.js';
 import type { ConvexPaginatedPage } from '../../../../shared/features/pagination/types/paginationTypesConvex.js';
-import type { ConvexFilter } from '../../../../shared/features/filters/types/filterTypesConvex.js';
-import type { TodoRecord } from '../../../../shared/features/todo/types/todoTypes.js';
-import { filterValues } from './filterValues';
+import type {
+	TodoFilterValues,
+	TodoRecord
+} from '../../../../shared/features/todo/types/todoTypes.js';
 
 export async function paginateTasks(
 	ctx: QueryCtx,
 	ownerId: string,
-	filters: ConvexFilter[],
+	filters: TodoFilterValues,
 	paginationOpts: PaginationOptions
 ): Promise<ConvexPaginatedPage<TodoRecord>> {
-	const { done, priceBand: band, createdAtFrom } = filterValues(filters);
+	const { done, priceBand: band, createdAtFrom } = filters;
 
 	if (createdAtFrom !== undefined) {
 		if (done !== undefined && band !== undefined) {

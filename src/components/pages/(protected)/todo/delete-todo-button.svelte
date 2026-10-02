@@ -72,7 +72,9 @@
 					disabled={deleting}
 					onclick={() => confirmDelete(close)}
 				>
-					{#if deleting}<Spinner />{/if}
+					{#if deleting}
+						<Spinner />
+					{/if}
 					{m['TodoPage.DeleteTodoButton.delete']()}
 				</Button>
 			</div>

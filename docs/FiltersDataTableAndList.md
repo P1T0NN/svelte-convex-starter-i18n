@@ -17,11 +17,11 @@ useConvexPagination(fetchTodos, args)
         |
         v
 convex/tables/tasks/queries/fetchTodos.ts
-	  fetchOptimizedQuery
+	  getTodoPage
 	        |
-	        +--> indexed native Convex pagination
-	        +--> native Convex search-index pagination when search is active
-	        +--> analytics-backed O(1) total when unfiltered
+	        +--> paginateTasks: indexed native Convex pagination
+	        +--> paginateSearch: native Convex search-index pagination when search is active
+	        +--> taskTotalCounter when unfiltered; taskFilterAggregate for the exact filtered total
 ```
 
 Convex keeps the query subscription synchronized after a mutation. Do not add
@@ -82,15 +82,17 @@ Filter definitions are client-facing labels and symbolic values only:
 
 The Convex server is the source of truth for translating those values:
 
-- `buildFilterWhere` drops unknown keys and values.
-- `todoPredicateFor` maps valid values to bounded predicates.
-- `todos.fetchTodos` chooses a matching index before calling native pagination.
+- `readTodoFilters` drops unknown keys and values and maps valid symbolic
+  values to typed index values (`done`, `priceBand`, `createdAtFrom`).
+- `paginateTasks` chooses a matching owner index before calling native
+  pagination.
 - The client never sends a column name, operator, or executable predicate.
 
 For a new filter:
 
 1. Add its `FilterDef` in `src/features/filters/data`.
-2. Add a symbolic mapping in the feature's `filterPredicates.ts`.
+2. Extend the owning table's typed filter reader (for tasks,
+   `src/convex/tables/tasks/helpers/readTodoFilters.ts`).
 3. Add or reuse a Convex index that matches the query shape.
 4. Pass `filters.active` into the query args.
 
@@ -110,26 +112,30 @@ Convex maintains the search index as tasks are created, updated, and deleted.
 
 ## Totals and scale
 
-- The unfiltered total comes from `@vllnt/convex-analytics` through
-  `tasksCountAggregate`; it does not scan the tasks table.
-- Search and filtered pages omit an exact total by default because an exact
-  filtered count would read all matches. Pagination remains correct without
-  it.
+- The unfiltered total comes from the per-owner `taskTotalCounter`
+  (`@convex-dev/sharded-counter`); it does not scan the tasks table.
+- A filter-only page adds the exact total from `taskFilterAggregate`, which
+  reads only the relevant key ranges.
+- Search pages omit `total` because an exact count for arbitrary search text
+  has no cheap source. Pagination remains correct without it.
 - Native Convex pagination uses opaque cursors and does not use `OFFSET`.
 - The application does not add an arbitrary page-size cap. Convex's own query
   and execution limits still apply.
-- Bulk deletion deduplicates ids in the mutation and enqueues storage cleanup;
-  the cron/action drains that queue separately.
+- Bulk deletion deduplicates ids in the mutation, deletes each owned row's
+  stored files, and skips missing or foreign rows.
 
 ## Why the pagination types were consolidated
 
-The shared UI contract now lives in `paginationTypes.ts`. Convex-specific
-contracts live in `paginationTypesConvex.ts`, including:
+The shared UI contract lives in `paginationTypes.ts` (`PaginationState`,
+`InfinitePage`, `InfinitePaginationState`). The Convex page contract lives in
+`paginationTypesConvex.ts`, including:
 
-- `QueryContext`
-- `ConvexFetchPage`
-- `CountFiltered`
-- `FetchOptimizedOptions`
+- `GetPaginationOptions`
+- `ConvexPaginatedPage`
+- `ConvexPaginatedSource`
+
+The query-reference contracts used by both client hooks live in
+`src/features/pagination/types/convexPaginationTypes.ts`.
 
 Keeping these contracts together removes duplicate definitions from query
 helpers and gives the Convex hook, pagination helpers, counters, and queries

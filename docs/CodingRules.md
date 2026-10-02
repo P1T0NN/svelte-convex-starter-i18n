@@ -1,11 +1,14 @@
 # Coding rules and reuse map
 
-This is the short, current map of the starter. Check here before creating a
-component, hook, query helper, or another state mechanism. The longer design
-notes are [`DataTableSearchSystemDesign.md`](./DataTableSearchSystemDesign.md),
+Global engineering rules for this starter. Domain rules for the todo list,
+auth, admin users, and the analytics dashboard live in
+[`ProjectCodingRules.md`](./ProjectCodingRules.md); read both before changing
+code. The longer design notes are
+[`DataTableSearchSystemDesign.md`](./DataTableSearchSystemDesign.md),
 [`FiltersDataTableAndList.md`](./FiltersDataTableAndList.md),
-[`InfiniteScrollingSystemDesign.md`](./InfiniteScrollingSystemDesign.md), and
-[`RateLimitingSystemDesign.md`](./RateLimitingSystemDesign.md).
+[`InfiniteScrollingSystemDesign.md`](./InfiniteScrollingSystemDesign.md),
+[`RateLimitingSystemDesign.md`](./RateLimitingSystemDesign.md), and
+[`FutureAnalyticsMetrics.md`](./FutureAnalyticsMetrics.md).
 
 ## Choose the existing layer first
 
@@ -30,6 +33,18 @@ condition is already self-explanatory, such as `if (!task)` or
 `if (items.length === 0)`. For example, write
 `const hasDuplicateKeys = countDistinctBy(keys, (key) => key) !== keys.length;`
 and then `if (hasDuplicateKeys)`, not the expression inline in the `if`.
+
+## Protected components
+
+Treat `src/components/ui/native-components` and
+`src/components/ui/custom-components` as read-only building blocks. Do not edit
+them to adapt a single caller, match a local layout preference, or add
+feature-specific behavior; compose or wrap them from the feature/page instead.
+
+Editing either family is strictly prohibited unless the component itself
+genuinely must change for something to work and that edit has been explicitly
+approved. When an edit is approved, keep it minimal, preserve every existing
+caller, and state why it was required.
 
 ## Project shape and request flow
 
@@ -87,18 +102,18 @@ For `DataList` and `DataTable` headers:
   initialization, return state through getters, and pass changing inputs as
   getter functions. Destructuring a returned getter or a reactive prop freezes
   the value.
-- `$effect` is exceptional. It remains deliberately in
-  `useCachedConvexQuery.svelte.ts` and `useConvexPagination.svelte.ts` only to
-  write fresh, non-stale results to the external bounded LRU cache; that is an
-  external synchronization with no `useQuery` success callback, not derived
-  state. Do not use effects for calculations, debouncing, URL writes, or state
-  mirroring when an event handler, `$derived`, `onMount`, or attachment works.
+- `$effect` is exceptional. Use it only for external synchronization without a
+  `useQuery` success callback, never for derived state. Do not use effects for
+  calculations, debouncing, URL writes, or state mirroring when an event
+  handler, `$derived`, `onMount`, or attachment works. The current allowed
+  effect locations are listed in
+  [`ProjectCodingRules.md`](./ProjectCodingRules.md).
 - Use `$state.snapshot` before passing a deeply reactive proxy to code that
   expects plain data (the form-change hook does this). Do not export a directly
   reassigned `$state` binding from a module; expose an object or functions.
 - Type `$props()` and use snippets for composition. Prefer `{@render}` over
   legacy slots. Use `{#key}` only when a child must be recreated with fresh
-  local state (the edit-todo form is keyed by task id).
+  local state.
 - DOM/global APIs belong behind `onMount`, event handlers, or `{@attach}`. Keep
   SSR-safe code free of `window`, `document`, `navigator`, and object URLs.
 
@@ -182,14 +197,13 @@ imported directly.
 
 ## Feature components and hooks
 
-| Area         | Existing pieces and intended use                                                                                                                                                                                                                         |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Auth         | `SignInForm`, `SignUpForm`, `ForgotPasswordForm`, `VerifyEmailForm`, and `LogoutButton`; `useAuth` centralizes Better Auth calls, error codes, pending state, OTP/password/social flows, and redirects. Keep wording in components via `ERROR_MESSAGES`. |
-| Search       | `SearchInput` is an InputGroup with clear button and optional listbox snippet. `useSearch` owns raw value, debounce, trim, minimum two-character gate, and `state`/`url` mode. Pass only `search.term` to a query.                                       |
-| Filters      | `TODO_FILTER_DEFS` and `ADMIN_USERS_FILTER_DEFS` define symbolic options. `useFilters` owns state/URL mode, active values, count, clear methods, and stable `identity`.                                                                                  |
-| Pagination   | `useConvexPagination` owns page/cursor sessions; `useConvexInfinitePagination` owns accumulated pages, duplicate protection, retry, and reset. `createConvexPaginationQuery` is their shared subscription builder.                                       |
-| Uploads      | `UploadFile`, `UploadFileDropzone`, `UploadFilePreviewItem`, and `useUpload` manage previews, object-URL cleanup, multiple-file ordering, cover selection, and removal. `optimizeToWebp` is the browser compression step.                                |
-| Todo example | `todoEditFields` is the reusable `Form` field config; `EditTodoButton` binds an edit form and preserves existing image keys.                                                                                                                             |
+| Area       | Existing pieces and intended use                                                                                                                                                                                                                                                          |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth       | `SignInForm`, `SignUpForm`, `ForgotPasswordForm`, `VerifyEmailForm`, and `LogoutButton`; `useAuth` centralizes Better Auth calls, error codes, pending state, OTP/password/social flows, and redirects. Keep wording in components via `ERROR_MESSAGES`.                                  |
+| Search     | `SearchInput` is an InputGroup with clear button and optional listbox snippet. `useSearch` owns raw value, debounce, trim, minimum two-character gate, and `state`/`url` mode. Pass only `search.term` to a query.                                                                        |
+| Filters    | Filter defs define symbolic options. `useFilters` owns state/URL mode, active values, count, clear methods, and stable `identity`.                                                                                                                                                        |
+| Pagination | `useConvexPagination` owns page/cursor sessions; `useConvexInfinitePagination` owns accumulated pages, duplicate protection, retry, and reset. `createConvexPaginationQuery` is their shared subscription builder.                                                                        |
+| Uploads    | `UploadFile`, `UploadFileDropzone`, `UploadFilePreviewItem`, and `useUpload` manage previews, object-URL cleanup, multiple-file ordering, cover selection, and removal. Originals upload to private R2; `processUploads` validates and optimizes them on the server before final storage. |
 
 The admin page components are intentionally page-specific: user list/header
 rows, user profile/settings/sessions/logs tabs, ban/unban/role actions, and
@@ -197,9 +211,9 @@ their loading skeletons. Reuse the generic `DataList`, `DataTable`, `Card`,
 `Badge`, `NativeDialog`, `NativeSelect`, and query hooks inside new admin
 screens instead of copying those page components.
 
-Operation input schemas use the exact function name plus `Schema`, such as
-`createTodoSchema` and `updateTodoSchema`. Reusable data schemas keep
-descriptive names such as `backendErrorDataSchema`.
+Operation input schemas use the exact function name plus `Schema`; reusable
+data schemas keep descriptive names. Domain schema names are listed in
+[`ProjectCodingRules.md`](./ProjectCodingRules.md).
 
 Leave built-in Zod validation messages at their defaults. Custom refinements
 must emit stable uppercase codes, never hardcoded user-facing text. Keep
@@ -231,9 +245,9 @@ optional-empty handling, and conditional validation in that schema. Native
 - `prepareArgs`, `UploadPrepareContext`, and `PreparedMutationArgs` are removed.
   Do not recreate the entire payload in a replacement callback.
 - Form attaches `uploadedFiles`, `retainedFiles`, and `turnstileToken` after
-  validation. These transport fields are not inputs to the form schema.
-  For creating todos, use `createTodoSchema.omit({ images: true })` because
-  the action accepts upload keys, not the shared schema's image defaults.
+  validation. These transport fields are not inputs to the form schema. The
+  domain-specific schema adjustments are listed in
+  [`ProjectCodingRules.md`](./ProjectCodingRules.md).
 
 ## Shared hooks, state, and utilities
 
@@ -376,25 +390,7 @@ optimize the actual bottleneck. `analyzeAlgorithm()` automates this abstract
 `Q * f(N)` comparison for already-loaded data; its pressure label is not a
 runtime benchmark or latency prediction.
 
-## Convex data model and function surface
-
-`src/convex/schema.ts` owns app tables:
-
-- `tasks`: optional `ownerId`, title/done/images/image keys/storage prefix,
-  timestamp, price, and materialized `priceBand`; owner/filter/date indexes
-  plus the `search_title` full-text index.
-- `storageUploads`: owner, object key, `pending`/`uploaded` status, timestamp,
-  and key/created-at indexes. It tracks uploads until a mutation claims them.
-- `dailySales`: one row per UTC day and shard (`DAILY_SALES_SHARD_COUNT` shards,
-  chosen by hashing the order id) with order counts by status and paid revenue.
-  The `orders` trigger in `aggregates/triggersAggregate.ts` keeps it current, so
-  dashboard queries read at most one row per day and shard instead of scanning
-  orders. Backfill or repair with the `ensureDailySalesRows` and
-  `rebuildDailySales` migrations; re-shard with `resetDailySales` first.
-- `products` + `orderItems`: catalog and line items (`orderId`, `productId`,
-  `quantity`, `lineTotalCents`) with order/product indexes.
-- Better Auth owns its component tables (`user`, `session`, `account`,
-  `verification`, rate-limit/JWKS tables) under `betterAuth/component`.
+## Convex platform conventions
 
 Always use Convex's generated `Doc<'table'>` type from
 `src/convex/_generated/dataModel` for Convex documents across the client,
@@ -414,25 +410,16 @@ Use the custom builders in `convexFunctionBuilders.ts`:
 - `authenticatedUploadMutation` additionally validates caller-owned uploaded
   keys and removes claimed upload records on success.
 
-Current app-facing functions are:
+For list queries, use the explicit cursor-list pattern: validate args with
+`listPageArgs` (`src/convex/validators/listPageArgs.ts`), build one indexed page
+through the owning table's page helper, enrich rows (joins, summaries) after the
+fetch with the table's `enrichXPage` helpers, and attach `total` only when no
+search is active (filters use their exact aggregate count). Use
+`fetchOptimizedSearchQuery` for bounded suggestions. Keep cursors opaque.
 
-- `api.auth.getCurrentUser`;
-- `api.tables.tasks.queries.fetchTodo` and `fetchTodos`, plus authenticated
-  `createTodo`, `updateTodo`, and deduplicating/best-effort `deleteTodo`;
-- `api.storage.r2.generateUploadUrl`, `syncMetadata`, and `deleteObject`;
-- `api.search.queries.fetchSearchSuggestions` (public, normalized, minimum two
-  characters, max seven results);
-- admin users/profile/settings/sessions/logs queries and
-  `api.auditLogs.queries.fetchAuditLogsAdmin`.
-
-For list queries, use `fetchOptimizedQuery`: it adds validated pagination,
-search, and symbolic filters, chooses the feature predicate registry, delegates
-the indexed page fetch, and reads an aggregate/counter total when configured.
-Use `fetchOptimizedSearchQuery` for bounded suggestions. Keep cursors opaque.
-
-Counts and side effects already have homes: task filter totals use
-`TableAggregate`, unfiltered owner totals use `ShardedCounter`, user totals use
-an aggregate, and trigger-wrapped mutations keep these projections current.
+Counts and side effects already have homes: totals use aggregates or sharded
+counters, dashboard projections are written by triggers so list and dashboard
+reads never scan, and trigger-wrapped mutations keep these projections current.
 Audit events are scheduled through internal mutations; R2 abandoned-upload
 cleanup runs every five minutes with a bounded batch. Resend email rendering
 and OTP delivery stay server-side. Migrations use the shared
@@ -453,6 +440,9 @@ misconfiguration, and infrastructure failures. Return `typesBackendResult`
 only when failure is a normal business outcome the caller is expected to branch
 on. A returned `{ success: false }` does not roll back prior mutation writes, so
 return it only before any writes or when committing those writes is intentional.
+
+The app's tables and app-facing functions are listed in
+[`ProjectCodingRules.md`](./ProjectCodingRules.md).
 
 ### Translatable backend errors
 
@@ -488,26 +478,22 @@ unknown code, malformed payload, ordinary `Error`, or infrastructure failure.
 
 ## Routes and page patterns
 
-- `/` is the public home page.
-- `(app)/(unprotected)` contains sign-in, sign-up, verify-email, and
-  forgot-password screens.
-- `(app)/(protected)` contains the todo list/add/edit pages and the data-list,
-  infinite-list, and data-table component demos. Its server layout owns the
-  authentication redirect and its `+layout@.svelte` owns the workspace shell.
-- `/admin` contains users, audit logs, and user detail tabs; its server layout
-  owns both authentication and admin-role redirects.
+- `(app)/(unprotected)` contains public app screens.
+- `(app)/(protected)` is reserved for authenticated screens; its server layout
+  owns the authentication redirect and its `+layout@.svelte` owns the workspace
+  shell.
+- `/admin` is the admin area; its server layout owns both authentication and
+  admin-role redirects.
 - `/api/auth/[...all]` is the Better Auth HTTP handler. `hooks.server.ts`
   injects the Convex token and sanitizes unexpected/validation errors.
+
+The current route map is in
+[`ProjectCodingRules.md`](./ProjectCodingRules.md).
 
 Pages should compose existing loading/error/empty states, use `SvelteHead`, and
 keep each Convex query's loading/error branch local. Use SvelteKit server
 `load` only for request-scoped SSR data or guards; current browser Convex calls
 are live subscriptions, not SvelteKit stream responses.
-
-- When Paraglide is configured, translation keys in page child components use
-  the PageName.ComponentName.key namespace and page-owned route markup uses
-  PageName.key. In a project without Paraglide, ignore all translation-key
-  guidance.
 
 ## Accessibility, imports, and verification
 
@@ -516,6 +502,8 @@ are live subscriptions, not SvelteKit stream responses.
   and visible focus styles. Icon-only controls need an accessible label.
 - Keep user-facing messages in the calling component; use `toastMessage` only
   to route success/error presentation and rate-limit timing.
+- Translation keys in page child components use the PageName.ComponentName.key
+  namespace; page-owned route markup uses PageName.key.
 - Group imports with uppercase comments (`// SVELTEKIT IMPORTS`, `// LIBRARIES`,
   `// COMPONENTS`, `// CONFIG`, `// UTILS`, `// TYPES`) and keep framework/
   library imports above local modules. Prefer `.js` suffixes for local TS
@@ -524,3 +512,16 @@ are live subscriptions, not SvelteKit stream responses.
 - After every change run `bunx --bun oxlint`. For Convex or pagination changes,
   also run `bun run check` and `npx convex dev --once`; run
   `bun run test:convex` for the relevant behavior.
+
+## Formatting conventions
+
+Prettier owns formatting; `prettier.config.js` sets
+`htmlWhitespaceSensitivity: 'ignore'`, so every element or component puts its
+children on indented lines instead of hugging `>`, `</tag>`, or `{/snippet}`.
+
+- Author `{#snippet}`, `{#each}`, `{#if}`, and `{#await}` blocks with the first
+  tag on its own indented line, and close with `{/...}` on its own line.
+  Prettier preserves the authored form for block content, so it cannot expand a
+  one-line block for you.
+- Run `bun run format` after changes; `prettier --check .` must pass. Generated
+  Paraglide output and caches are ignored in `.prettierignore`.

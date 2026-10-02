@@ -35,6 +35,8 @@ export function getBackendErrorMessage(error: Error): string | undefined {
 			return m['BackendMessages.invalidUploadNamespace']();
 		case 'INVALID_UPLOAD':
 			return m['BackendMessages.invalidUpload']();
+		case 'UPLOAD_BATCH_TOO_LARGE':
+			return m['BackendMessages.uploadBatchTooLarge']({ maxSizeMB: parsed.data.maxSizeMB });
 		case 'TOO_MANY_FILES':
 			return m['BackendMessages.tooManyFiles']({ maxFiles: parsed.data.maxFiles });
 		case 'TOO_MANY_TODOS':

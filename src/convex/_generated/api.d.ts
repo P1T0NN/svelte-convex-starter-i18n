@@ -66,6 +66,7 @@ import type * as rateLimits_helpers_enforceRateLimit from "../rateLimits/helpers
 import type * as rateLimits_types_rateLimitTypes from "../rateLimits/types/rateLimitTypes.js";
 import type * as search_queries_fetchSearchSuggestions from "../search/queries/fetchSearchSuggestions.js";
 import type * as storage_getUploadByKey from "../storage/getUploadByKey.js";
+import type * as storage_actions from "../storage/actions.js";
 import type * as storage_r2 from "../storage/r2.js";
 import type * as tables_orders_seeds_seedOrders from "../tables/orders/seeds/seedOrders.js";
 import type * as tables_orders_seeds_seedOrdersBatches from "../tables/orders/seeds/seedOrdersBatches.js";
@@ -157,6 +158,7 @@ declare const fullApi: ApiFromModules<{
   "rateLimits/types/rateLimitTypes": typeof rateLimits_types_rateLimitTypes;
   "search/queries/fetchSearchSuggestions": typeof search_queries_fetchSearchSuggestions;
   "storage/getUploadByKey": typeof storage_getUploadByKey;
+  "storage/actions": typeof storage_actions;
   "storage/r2": typeof storage_r2;
   "tables/orders/seeds/seedOrders": typeof tables_orders_seeds_seedOrders;
   "tables/orders/seeds/seedOrdersBatches": typeof tables_orders_seeds_seedOrdersBatches;

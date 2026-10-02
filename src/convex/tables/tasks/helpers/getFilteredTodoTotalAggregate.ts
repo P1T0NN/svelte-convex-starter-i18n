@@ -1,13 +1,12 @@
 // HELPERS
 import { getFilteredTotalAggregate } from '../../../aggregates/helpers/getFilteredTotalAggregate';
-import { filterValues } from './filterValues';
 import { taskFilterAggregate } from '../aggregates/taskFilterAggregate';
 
 // UTILS
 import { getPrefixRangeBoundsAggregate } from '../../../aggregates/utils/getPrefixRangeBoundsAggregate';
 
 // TYPES
-import type { ConvexFilter } from '../../../../shared/features/filters/types/filterTypesConvex.js';
+import type { TodoFilterValues } from '../../../../shared/features/todo/types/todoTypes.js';
 import type { TodoPriceBand } from '../../../../shared/features/todo/config.js';
 import type { Id } from '../../../_generated/dataModel';
 import type { QueryCtx } from '../../../_generated/server';
@@ -19,9 +18,9 @@ const ALL_PRICE_BANDS = ['lt50', '50to100', 'gt100'] as const satisfies readonly
 export async function getFilteredTodoTotalAggregate(
 	ctx: QueryCtx,
 	ownerId: string,
-	filters: ConvexFilter[]
+	filters: TodoFilterValues
 ): Promise<number> {
-	const { done, priceBand, createdAtFrom } = filterValues(filters);
+	const { done, priceBand, createdAtFrom } = filters;
 	const doneValues = done === undefined ? ALL_DONE_VALUES : [done];
 	const priceBandValues = priceBand === undefined ? ALL_PRICE_BANDS : [priceBand];
 

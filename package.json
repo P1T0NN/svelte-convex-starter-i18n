@@ -5,12 +5,15 @@
 	"type": "module",
 	"overrides": {
 		"cookie": "0.7.2",
-		"esbuild": "0.28.2"
+		"esbuild": "0.28.2",
+		"@aws-sdk/client-s3": "3.1123.0",
+		"@aws-sdk/s3-request-presigner": "3.1123.0"
 	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
+		"optimize-images": "bun scripts/optimize-images.mjs",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -73,12 +76,14 @@
 		"@mmailaender/convex-better-auth-svelte": "^0.8.2",
 		"@vllnt/convex-analytics": "^0.1.0-canary.55667b0",
 		"better-auth": "~1.6.15",
-		"browser-image-compression": "^2.0.2",
 		"convex": "^1.45.0",
 		"convex-audit-log": "^0.2.0",
 		"convex-helpers": "^0.1.123",
 		"convex-svelte": "^0.14.0",
 		"resend": "^6.20.0",
-		"zod": "^4.4.3"
+		"zod": "^4.4.3",
+		"sharp": "^0.35.4",
+		"@aws-sdk/client-s3": "3.1123.0",
+		"@aws-sdk/s3-request-presigner": "3.1123.0"
 	}
 }

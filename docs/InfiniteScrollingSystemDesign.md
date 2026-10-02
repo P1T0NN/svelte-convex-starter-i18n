@@ -149,9 +149,10 @@ cursor as an offset.
 - The client never treats `items.length` as the total.
 
 For the current project, `getPagination` adapts native Convex pagination to
-the page shape, and `fetchOptimizedQuery` attaches `total` when an appropriate
-count source is configured. Infinite scrolling should reuse that contract
-instead of introducing a second pagination protocol.
+the page shape, and the owning list query (`fetchTodos` through `getTodoPage`)
+attaches `total` when an appropriate count source is configured. Infinite
+scrolling should reuse that contract instead of introducing a second pagination
+protocol.
 
 ## The total count is a separate concern
 
@@ -180,11 +181,11 @@ creation and deletion. The counter key must include the project or tenant
 scope. A global counter is not correct when the title is supposed to say how
 many accommodations belong to one project.
 
-The current project uses `tasksCountAggregate`, backed by
-`@vllnt/convex-analytics`, for maintained unfiltered task totals and reads the
-value through `getTotalSizeAggregate`. The same pattern is appropriate for an
-unfiltered accommodation total, provided the counter is scoped correctly and
-all writes update it reliably.
+The current project uses `taskTotalCounter`, a `@convex-dev/sharded-counter`
+scoped to the owning user, for maintained unfiltered task totals and reads it
+directly in `fetchTodos`. The same pattern is appropriate for an unfiltered
+accommodation total, provided the counter is scoped correctly and all writes
+update it reliably.
 
 This gives the page a bounded read for the rows and an O(1)-style read for the
 maintained total. It avoids scanning the collection merely to render the
@@ -613,17 +614,16 @@ when measurements show it is necessary rather than introduced everywhere.
 
 The current project already has the main server-side pieces:
 
-| Responsibility                    | Current location or convention                                   |
-| --------------------------------- | ---------------------------------------------------------------- |
-| Default page size                 | `src/shared/features/pagination/config.ts`, value `10`           |
-| Convex page adapter               | `src/convex/helpers/getPagination.ts`                            |
-| Count read helper                 | `src/convex/aggregates/helpers/getTotalSizeAggregate.ts`         |
-| Shared optimized query contract   | `src/convex/wrappers/fetchOptimizedQuery.ts`                     |
-| Unfiltered count usage            | `tasksCountAggregate` backed by `@vllnt/convex-analytics`        |
-| Exact task filter counts          | `src/convex/aggregates/tables/tasks` via `@convex-dev/aggregate` |
-| Classic previous/next client flow | `src/features/pagination/hooks/useConvexPagination.svelte.ts`    |
-| Existing list/table renderers     | `src/components/ui/custom-components/data-list` and `data-table` |
-| New infinite-scroll UI boundary   | `src/components/ui/custom-components/infinite-scroll`            |
+| Responsibility                    | Current location or convention                                                                                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Default page size                 | `src/shared/features/pagination/config.ts`, value `10`                                                                                                                   |
+| Convex page adapter               | `src/convex/helpers/getPagination.ts`                                                                                                                                    |
+| Shared cursor-list contract       | `src/convex/validators/listPageArgs.ts`                                                                                                                                  |
+| Unfiltered count usage            | `taskTotalCounter` via `@convex-dev/sharded-counter`, read in `fetchTodos`                                                                                               |
+| Exact task filter counts          | `src/convex/tables/tasks/aggregates/taskFilterAggregate.ts` via `@convex-dev/aggregate`, read through `src/convex/tables/tasks/helpers/getFilteredTodoTotalAggregate.ts` |
+| Classic previous/next client flow | `src/features/pagination/hooks/useConvexPagination.svelte.ts`                                                                                                            |
+| Existing list/table renderers     | `src/components/ui/custom-components/data-list` and `data-table`                                                                                                         |
+| Infinite-scroll UI boundary       | `src/components/ui/custom-components/infinite-scroll`                                                                                                                    |
 
 The infinite-pagination hook and thin `InfiniteScroll.svelte` component now
 reuse `getPagination`, the existing validated search/filter conventions, and
@@ -639,8 +639,8 @@ the hook instead of importing Convex itself.
 3. Implement `InfiniteScroll.svelte` with a Svelte 5 attachment,
    `IntersectionObserver`, loading/error/end states, and a button fallback.
    (Complete.)
-4. Create one accommodation or task integration using the existing Convex
-   query wrapper. (Complete for tasks.)
+4. Create one accommodation or task integration using the explicit
+   cursor-list query. (Complete for tasks.)
 5. Compose the state with a list and a table while keeping the sentinel outside
    the table element. (Infinite mode is currently enabled for `DataList`;
    `DataTable` retains classic pagination.)

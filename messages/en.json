@@ -1,7 +1,6 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"example_message": "Hello world {username}",
-
 	"AnalyticsFeature": {
 		"AnalyticsData": {
 			"revenue": "Revenue",
@@ -473,6 +472,7 @@
 		"invalidUploadNamespace": "The upload location is invalid.",
 		"invalidUpload": "The selected file is invalid.",
 		"tooManyFiles": "You can upload at most {maxFiles} files.",
-		"tooManyTodos": "You can delete at most {maxTodos} todos at once."
+		"tooManyTodos": "You can delete at most {maxTodos} todos at once.",
+		"uploadBatchTooLarge": "The combined image upload cannot exceed {maxSizeMB} MB."
 	}
 }

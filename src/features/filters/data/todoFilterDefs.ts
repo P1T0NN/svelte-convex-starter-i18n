@@ -3,9 +3,9 @@ import type { FilterDef } from '@/shared/features/filters/types/filterTypes.js';
 
 /**
  * The demo filter schema for the `tasks` listing — the concrete options each
- * filter column exposes. `key` is the contract with the server predicate
- * registry (`buildFilterWhere`): the client only ever sends these symbolic
- * option values, never column names or operators.
+ * filter column exposes. `key` is the contract with the server filter reader
+ * (`readTodoFilters`): the client only ever sends these symbolic option values,
+ * never column names or operators.
  *
  * `status` maps onto the Convex `done` boolean; `price` maps onto the
  * materialized `priceBand`, and `date` maps onto indexed `createdAt`.

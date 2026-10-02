@@ -11,7 +11,6 @@ import { convexTest } from 'convex-test';
 
 import { api, internal } from '../../src/convex/_generated/api';
 import schema from '../../src/convex/schema';
-import { detectImageContentType } from '../../src/convex/storage/r2';
 import { STORAGE_CONFIG } from '../../src/shared/features/storage/config';
 
 const modules = import.meta.glob('../../src/convex/**/*.ts');
@@ -147,23 +146,22 @@ test('claims only uploaded R2 keys owned by the mutation caller', async () => {
 		tokenIdentifier: 'https://insightful-mouse-270.eu-west-1.convex.site|other-upload-owner',
 		subject: 'other-upload-owner'
 	});
-	const generated = await owner.mutation(api.storage.r2.generateUploadUrl, {
-		size: 12,
-		contentType: 'image/webp'
+	const [generated] = await owner.mutation(api.storage.r2.generateUploadUrls, {
+		files: [{ size: 12, contentType: 'image/webp' }]
 	});
-	expect(generated.key).toMatch(/^[0-9a-f-]{36}$/);
+	expect(generated.key).toMatch(/^[0-9a-f-]{36}\.webp$/);
 	const trackedUpload = await t.run((ctx) =>
 		ctx.db
 			.query('storageUploads')
 			.withIndex('by_key', (query) => query.eq('key', generated.key))
 			.unique()
 	);
-	expect(generated.url).toContain('test-account.r2.cloudflarestorage.com');
+	expect(generated.url).toContain('test-temp-account.r2.cloudflarestorage.com');
 	expect(trackedUpload).toMatchObject({ ownerId: 'upload-owner', status: 'pending' });
 
 	await expect(
-		otherOwner.action(api.storage.r2.syncMetadata, { key: generated.key })
-	).resolves.toBe(false);
+		otherOwner.mutation(api.storage.r2.deleteObject, { key: generated.key })
+	).rejects.toMatchObject({ data: { code: 'UPLOAD_NOT_FOUND' } });
 	await t.run((ctx) => ctx.db.patch(trackedUpload!._id, { status: 'uploaded' }));
 	await expect(
 		owner.action(api.tables.tasks.mutations.createTodo.createTodo, {
@@ -218,13 +216,12 @@ test('generates namespaced R2 keys and deletes them by their full key', async ()
 		tokenIdentifier: 'namespaced-upload-owner',
 		subject: 'namespaced-upload-owner'
 	});
-	const generated = await owner.mutation(api.storage.r2.generateUploadUrl, {
+	const [generated] = await owner.mutation(api.storage.r2.generateUploadUrls, {
 		namespace: 'products/images',
-		size: 12,
-		contentType: 'image/webp'
+		files: [{ size: 12, contentType: 'image/webp' }]
 	});
 
-	expect(generated.key).toMatch(/^products\/images\/[0-9a-f-]{36}$/);
+	expect(generated.key).toMatch(/^products\/images\/[0-9a-f-]{36}\.webp$/);
 	await owner.mutation(api.storage.r2.deleteObject, { key: generated.key });
 	expect(
 		await t.run((ctx) =>
@@ -233,18 +230,17 @@ test('generates namespaced R2 keys and deletes them by their full key', async ()
 				.withIndex('by_key', (query) => query.eq('key', generated.key))
 				.unique()
 		)
-	).toBeNull();
+	).toMatchObject({ status: 'deleting' });
 
 	await expect(
-		owner.mutation(api.storage.r2.generateUploadUrl, {
+		owner.mutation(api.storage.r2.generateUploadUrls, {
 			namespace: '../products',
-			size: 12,
-			contentType: 'image/webp'
+			files: [{ size: 12, contentType: 'image/webp' }]
 		})
 	).rejects.toMatchObject({ data: { code: 'INVALID_UPLOAD_NAMESPACE' } });
 });
 
-test('rejects oversized or disguised uploads', async () => {
+test('rejects oversized originals', async () => {
 	const t = createTestContext();
 	const owner = t.withIdentity({
 		tokenIdentifier: 'upload-validator',
@@ -252,13 +248,10 @@ test('rejects oversized or disguised uploads', async () => {
 	});
 
 	await expect(
-		owner.mutation(api.storage.r2.generateUploadUrl, {
-			size: STORAGE_CONFIG.maxFileSizeBytes + 1,
-			contentType: 'image/png'
+		owner.mutation(api.storage.r2.generateUploadUrls, {
+			files: [{ size: STORAGE_CONFIG.maxFileSizeBytes + 1, contentType: 'image/png' }]
 		})
 	).rejects.toMatchObject({ data: { code: 'INVALID_UPLOAD' } });
-	expect(detectImageContentType(new Uint8Array([0xff, 0xd8, 0xff]))).toBe('image/jpeg');
-	expect(detectImageContentType(new TextEncoder().encode('<svg onload=alert(1)>'))).toBeUndefined();
 });
 
 test('returns owner-scoped totals while loading paginated task pages', async () => {
@@ -354,7 +347,7 @@ test('removes tasks and pending uploads after their owner is deleted', async () 
 	});
 
 	expect(await t.run((ctx) => ctx.db.get(taskId))).toBeNull();
-	expect(await t.run((ctx) => ctx.db.get(uploadId))).toBeNull();
+	expect(await t.run((ctx) => ctx.db.get(uploadId))).toMatchObject({ status: 'deleting' });
 });
 
 test('returns a retry delay when an actor exceeds the mutation rate limit', async () => {

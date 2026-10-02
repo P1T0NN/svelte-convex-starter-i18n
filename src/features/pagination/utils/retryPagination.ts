@@ -3,7 +3,9 @@ import type { RetryPaginationOptions } from '@/features/pagination/types/convexP
 
 /** Recreate the current Convex subscription so a failed page can be retried. */
 export function retryPagination<Item>(options: RetryPaginationOptions<Item>): void {
-	if (!options.queryEnabled || options.visibleError === undefined || options.retrying) return;
+	const cannotRetry =
+		!options.queryEnabled || options.visibleError === undefined || options.retrying;
+	if (cannotRetry) return;
 
 	const key = options.resetKey;
 	let session = options.getSession();

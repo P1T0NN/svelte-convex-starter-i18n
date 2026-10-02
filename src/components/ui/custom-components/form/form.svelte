@@ -8,6 +8,8 @@
 	import FormSelect from './form-select.svelte';
 	import FormTextarea from './form-textarea.svelte';
 	import FormUploadFile from './form-upload-file.svelte';
+	import { Progress } from '@/components/ui/progress/index.js';
+	import { Spinner } from '../../spinner/index.js';
 	import { m } from '@/lib/paraglide/messages';
 
 	// HOOKS
@@ -158,14 +160,7 @@
 			onCheckedChange={(checked) => form.setValue(field.name, checked)}
 		/>
 	{:else if field.kind === 'upload'}
-		<FormUploadFile
-			{field}
-			bind:uploadFiles
-			{submitting}
-			error={form.errors[field.name]}
-			uploadProgress={form.uploadProgress}
-			preparingUpload={form.preparingUpload}
-		/>
+		<FormUploadFile {field} bind:uploadFiles {submitting} error={form.errors[field.name]} />
 	{:else if field.kind === 'section'}
 		<FormSection {field} renderField={renderLocalField} />
 	{:else if field.kind === 'custom'}
@@ -197,6 +192,29 @@
 			onReset={captcha.registerReset}
 			onExecute={captcha.registerExecute}
 		/>
+	{/if}
+
+	{#if form.uploadProgress !== null}
+		<div class="flex flex-col gap-2" role="status" aria-live="polite">
+			<div class="flex items-center justify-between gap-3 text-sm">
+				<span class="flex flex-row items-center gap-x-3">
+					{#if form.preparingUpload}
+						{m['Components.FormUploadFile.preparingFiles']()}
+					{:else}
+						<Spinner /> {m['Components.FormUploadFile.uploadingFiles']()}
+					{/if}
+				</span>
+
+				{#if !form.preparingUpload}
+					<span class="text-muted-foreground tabular-nums">{form.uploadProgress}%</span>
+				{/if}
+			</div>
+
+			<Progress
+				value={form.uploadProgress}
+				aria-label={m['Components.FormUploadFile.uploadProgress']()}
+			/>
+		</div>
 	{/if}
 
 	{@render children?.()}
